@@ -1,0 +1,184 @@
+Bản mô tả chức năng và thiết kế UI sơ bộ: Phần mềm quản lý câu lạc bộ thể thao
+1. Giới thiệu chung
+Phần mềm quản lý câu lạc bộ thể thao được xây dựng nhằm hỗ trợ ban quản lý câu lạc bộ trong việc quản lý hội viên, huấn luyện viên, lớp học, lịch tập, sân bãi, thanh toán học phí và theo dõi hoạt động vận hành hằng ngày. Hệ thống giúp giảm thao tác thủ công, tăng tính chính xác, minh bạch và nâng cao trải nghiệm cho người quản trị cũng như hội viên.
+1.1 Mục tiêu hệ thống
+- Quản lý tập trung toàn bộ thông tin câu lạc bộ.
+- Hỗ trợ đăng ký hội viên và quản lý hồ sơ cá nhân.
+- Theo dõi lịch tập, lớp học, sân tập và huấn luyện viên.
+- Quản lý gói tập, học phí, thanh toán và công nợ.
+- Hỗ trợ thống kê, báo cáo doanh thu và tình hình hoạt động.
+1.2 Đối tượng sử dụng
+- Quản trị viên: quản lý toàn bộ hệ thống.
+- Nhân viên lễ tân/điều phối: tiếp nhận đăng ký, xếp lịch, thu phí.
+- Huấn luyện viên: theo dõi lớp học, điểm danh, quản lý học viên.
+- Hội viên: xem lịch tập, đăng ký lớp, theo dõi gói tập.
+2. Các chức năng chính của ứng dụng
+2.1 Quản lý đăng nhập và phân quyền
+- Mô tả: Cho phép người dùng đăng nhập vào hệ thống theo đúng vai trò và quyền hạn.
+- Chức năng chi tiết
+ Đăng nhập bằng email/số điện thoại và mật khẩu.
+ Quên mật khẩu, đổi mật khẩu.
+ Phân quyền theo vai trò: quản trị viên, nhân viên, huấn luyện viên, hội viên.
+ Ghi nhật ký đăng nhập và hoạt động cơ bản.
+- Kết quả mong đợi
+ Đảm bảo an toàn thông tin.
+ Mỗi người dùng chỉ truy cập đúng chức năng được cấp phép.
+2.2 Quản lý hội viên
+- Mô tả: Lưu trữ và quản lý toàn bộ thông tin của hội viên đang tham gia tại câu lạc bộ.
+- Chức năng chi tiết
+ Thêm, sửa, xóa hồ sơ hội viên.
+ Tra cứu hội viên theo mã, họ tên, số điện thoại.
+ Lưu thông tin cá nhân: họ tên, ngày sinh, giới tính, địa chỉ, ảnh đại diện.
+ Quản lý tình trạng hội viên: đang hoạt động, tạm ngưng, hết hạn.
+ Theo dõi gói tập đang sử dụng và lịch sử tham gia.
+- Kết quả mong đợi
+ Quản lý hồ sơ hội viên đầy đủ, chính xác.
+ Dễ dàng tìm kiếm và chăm sóc khách hàng.
+2.3 Quản lý huấn luyện viên
+- Mô tả: Quản lý thông tin huấn luyện viên và phân công giảng dạy.
+- Chức năng chi tiết
+ Thêm, sửa, xóa hồ sơ huấn luyện viên.
+ Quản lý chuyên môn: bóng đá, cầu lông, gym, bơi lội, yoga...
+ Theo dõi lịch dạy, số lớp phụ trách.
+ Quản lý trạng thái làm việc.
+- Kết quả mong đợi
+ Phân công nhân sự hợp lý.
+ Hạn chế trùng lịch và tối ưu nguồn lực.
+2.4 Quản lý lớp học / khóa tập
+- Mô tả: Quản lý các lớp tập luyện, khóa học và nhóm hội viên tham gia.
+- Chức năng chi tiết
+ Tạo lớp mới, cập nhật thông tin lớp.
+ Thiết lập số lượng tối đa học viên.
+ Gán huấn luyện viên cho lớp.
+ Thiết lập lịch tập theo ngày, giờ.
+ Quản lý danh sách học viên của từng lớp.
+ Theo dõi trạng thái lớp: sắp khai giảng, đang hoạt động, đã kết thúc.
+- Kết quả mong đợi
+ Tổ chức lớp học rõ ràng.
+ Dễ dàng theo dõi sĩ số và lịch vận hành.
+2.5 Quản lý lịch tập và đặt sân
+- Mô tả: Hỗ trợ quản lý lịch tập luyện, lịch thi đấu nội bộ, lịch thuê sân hoặc phòng tập.
+- Chức năng chi tiết
+ Tạo lịch tập theo ngày/tuần/tháng.
+ Đặt sân, phòng tập hoặc khu vực tập luyện.
+ Cảnh báo trùng lịch sân hoặc huấn luyện viên.
+ Xem lịch theo từng lớp, từng huấn luyện viên hoặc từng sân.
+ Gửi thông báo khi có thay đổi lịch.
+- Kết quả mong đợi
+ Sắp xếp lịch khoa học.
+ Giảm xung đột khi sử dụng cơ sở vật chất.
+2.6 Điểm danh hội viên
+- Mô tả: Cho phép nhân viên hoặc huấn luyện viên điểm danh học viên tham gia buổi tập.
+- Chức năng chi tiết
+ Điểm danh theo danh sách lớp.
+ Hỗ trợ điểm danh bằng mã hội viên hoặc QR code.
+ Ghi nhận có mặt, vắng mặt, đến muộn.
+ Xem lịch sử điểm danh theo từng hội viên.
+- Kết quả mong đợi
+ Theo dõi mức độ tham gia của hội viên.
+ Hỗ trợ đánh giá mức độ chuyên cần.
+2.7 Quản lý gói tập và thanh toán
+- Mô tả: Quản lý các gói tập, chi phí dịch vụ và lịch sử thanh toán của hội viên.
+- Chức năng chi tiết
+ Tạo và cập nhật các gói tập: tháng, quý, năm, buổi lẻ.
+ Gán gói tập cho hội viên.
+ Lập phiếu thu, ghi nhận thanh toán.
+ Theo dõi công nợ hoặc gói sắp hết hạn.
+ Hỗ trợ nhiều hình thức thanh toán: tiền mặt, chuyển khoản, ví điện tử.
+ Xuất hóa đơn hoặc biên nhận.
+- Kết quả mong đợi
+ Quản lý tài chính minh bạch.
+ Hạn chế thất thoát và nhắc gia hạn đúng lúc.
+2.8 Quản lý thông báo
+- Mô tả: Cho phép gửi thông báo tới hội viên hoặc huấn luyện viên.
+- Chức năng chi tiết
+ Gửi thông báo về lịch học, thay đổi lịch tập.
+ Nhắc hội viên gia hạn gói tập.
+ Thông báo sự kiện, giải đấu nội bộ.
+ Gửi thông báo theo nhóm đối tượng.
+- Kết quả mong đợi
+ Tăng tương tác giữa câu lạc bộ và hội viên.
+ Truyền đạt thông tin nhanh chóng.
+2.9 Báo cáo và thống kê
+- Mô tả: Cung cấp các báo cáo để nhà quản lý theo dõi tình hình hoạt động.
+- Chức năng chi tiết
+ Thống kê số lượng hội viên.
+ Thống kê số lớp đang hoạt động.
+ Thống kê tỷ lệ điểm danh.
+ Báo cáo doanh thu theo ngày, tháng, năm.
+ Báo cáo gói tập sắp hết hạn.
+ Biểu đồ tăng trưởng hội viên.
+- Kết quả mong đợi
+ Hỗ trợ ra quyết định nhanh và chính xác.
+ Đánh giá hiệu quả vận hành câu lạc bộ.
+3. Yêu cầu phi chức năng
+- Giao diện thân thiện, dễ sử dụng.
+- Tốc độ phản hồi nhanh.
+- Dữ liệu được bảo mật.
+- Hỗ trợ trên máy tính và điện thoại.
+- Có khả năng mở rộng khi số lượng hội viên tăng.
+4. Thiết kế UI cho các giao diện chính
+Dưới đây là mockup sơ bộ ở mức wireframe. Có thể triển khai lại bằng Canva, draw.io hoặc Figma.
+4.1 Màn hình đăng nhập
+- Mục đích: Cho phép người dùng truy cập vào hệ thống.
+- Thành phần giao diện
+ Logo câu lạc bộ
+ Tên hệ thống
+ Ô nhập email/số điện thoại
+ Ô nhập mật khẩu
+ Nút đăng nhập
+ Liên kết quên mật khẩu
+- Giao diện
+ 
+4.2 Màn hình trang chủ / Dashboard
+- Mục đích: Hiển thị tổng quan hoạt động của câu lạc bộ.
+- Thành phần giao diện
+ Thanh menu bên trái
+ Thanh trên cùng chứa thông tin người dùng
+ Các thẻ thống kê nhanh
+ Biểu đồ doanh thu / số hội viên
+ Danh sách lớp học hôm nay
+- Giao diện
+ 
+4.3 Màn hình quản lý hội viên
+- Mục đích: Quản lý hồ sơ hội viên.
+- Thành phần giao diện
+ Ô tìm kiếm hội viên
+ Bộ lọc trạng thái
+ Nút thêm hội viên
+ Bảng danh sách hội viên
+ Nút xem chi tiết / sửa / xóa
+- Giao diện:
+ 
+4.4 Màn hình quản lý lớp học
+- Mục đích: Quản lý danh sách lớp học hoặc khóa tập.
+- Thành phần giao diện
+ Danh sách lớp
+ Nút thêm lớp
+ Bộ lọc theo môn thể thao
+ Hiển thị huấn luyện viên, lịch tập, số lượng học viên
+- Giao diện
+ 
+4.6 Màn hình lịch tập
+- Mục đích: Quản lý lịch theo ngày hoặc tuần.
+- Thành phần giao diện
+ Bộ chọn ngày
+ Chế độ xem ngày/tuần/tháng
+ Danh sách sân/phòng tập
+ Các khung giờ có lớp
+- Giao diện: 
+ 
+
+5. Đề xuất cấu trúc menu hệ thống
+- Dashboard
+- Quản lý hội viên
+- Quản lý huấn luyện viên
+- Quản lý lớp học
+- Lịch tập / đặt sân
+- Điểm danh
+- Gói tập
+- Thanh toán
+- Thông báo
+- Báo cáo thống kê
+- Cài đặt hệ thống
+
