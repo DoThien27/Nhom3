@@ -1,40 +1,40 @@
 """
 Trang Đăng nhập — GymThep Pro System
 """
+import threading
 import customtkinter as ctk
 from database.db_connection import test_connection
 import services.user_service as us
 
-ORANGE = "#f97316"
-ORANGE_DARK = "#ea6c0a"
+ORANGE = "#ea580c"
+ORANGE_DARK = "#c2410c"
 WHITE = "#ffffff"
-BG = "#f8fafc"
+BG = "#f1f5f9"
 TEXT_PRIMARY = "#0f172a"
-TEXT_SECONDARY = "#64748b"
+TEXT_SECONDARY = "#475569"
 TEXT_MUTED = "#94a3b8"
 BORDER = "#e2e8f0"
-SLATE_50 = "#f8fafc"
-RED = "#ef4444"
-EMERALD = "#10b981"
+SLATE_50 = "#f1f5f9"
+RED = "#dc2626"
+EMERALD = "#059669"
 
 
-class LoginPage(ctk.CTkFrame):
-    def __init__(self, master, on_login_success, **kwargs):
+class TrangDangNhap(ctk.CTkFrame):
+    def __init__(self, master, khi_dang_nhap_thanh_cong, **kwargs):
         super().__init__(master, fg_color=SLATE_50, corner_radius=0, **kwargs)
-        self.on_login_success = on_login_success
-        self._build()
+        self.khi_dang_nhap_thanh_cong = khi_dang_nhap_thanh_cong
+        self._tao_giao_dien()
 
-    def _build(self):
+    def _tao_giao_dien(self):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         # Center card
-        card = ctk.CTkFrame(self, fg_color=WHITE, corner_radius=24,
+        card = ctk.CTkFrame(self, fg_color=WHITE, corner_radius=28,
                              border_width=1, border_color=BORDER,
-                             width=420)
+                             width=440, height=580)
         card.grid(row=0, column=0)
-        card.grid_propagate(False)
-        card.configure(width=420)
+        card.pack_propagate(False)
 
         # Logo
         logo_frame = ctk.CTkFrame(card, fg_color="#fff7ed", corner_radius=20,
@@ -45,17 +45,17 @@ class LoginPage(ctk.CTkFrame):
                      font=ctk.CTkFont(size=36)).pack(expand=True)
 
         ctk.CTkLabel(card, text="CLB Thể Thao",
-                     font=ctk.CTkFont(family="Segoe UI", size=26, weight="bold"),
+                     font=ctk.CTkFont(family="Inter", size=26, weight="bold"),
                      text_color=TEXT_PRIMARY).pack(pady=(16, 0))
         ctk.CTkLabel(card, text="HỆ THỐNG QUẢN LÝ CÂU LẠC BỘ THỂ THAO",
                      font=ctk.CTkFont(size=9, weight="bold"),
                      text_color=ORANGE).pack()
 
         # Connection status
-        self.conn_lbl = ctk.CTkLabel(card, text="● Đang kết nối...",
-                                      font=ctk.CTkFont(size=10, weight="bold"),
-                                      text_color=TEXT_MUTED)
-        self.conn_lbl.pack(pady=(8, 0))
+        self.nhan_ket_noi = ctk.CTkLabel(card, text="● Đang kết nối...",
+                                       font=ctk.CTkFont(size=10, weight="bold"),
+                                       text_color=TEXT_MUTED)
+        self.nhan_ket_noi.pack(pady=(8, 0))
 
         # Form
         form = ctk.CTkFrame(card, fg_color=WHITE, corner_radius=0)
@@ -64,80 +64,93 @@ class LoginPage(ctk.CTkFrame):
         ctk.CTkLabel(form, text="Tên đăng nhập",
                      font=ctk.CTkFont(size=10, weight="bold"),
                      text_color=TEXT_MUTED, anchor="w").pack(fill="x", pady=(0, 4))
-        self.username_entry = ctk.CTkEntry(
-            form, placeholder_text="Nhập username...",
+        self.o_nhap_ten_dang_nhap = ctk.CTkEntry(
+            form, placeholder_text="Nhập tên đăng nhập...",
             height=46, corner_radius=12, border_color=BORDER,
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color=SLATE_50, text_color=TEXT_PRIMARY,
             border_width=1
         )
-        self.username_entry.pack(fill="x", pady=(0, 16))
+        self.o_nhap_ten_dang_nhap.pack(fill="x", pady=(0, 16))
 
         ctk.CTkLabel(form, text="Mật khẩu",
                      font=ctk.CTkFont(size=10, weight="bold"),
                      text_color=TEXT_MUTED, anchor="w").pack(fill="x", pady=(0, 4))
-        self.password_entry = ctk.CTkEntry(
+        self.o_nhap_mat_khau = ctk.CTkEntry(
             form, placeholder_text="Nhập mật khẩu...",
             show="●", height=46, corner_radius=12, border_color=BORDER,
             font=ctk.CTkFont(size=13, weight="bold"),
             fg_color=SLATE_50, text_color=TEXT_PRIMARY,
             border_width=1
         )
-        self.password_entry.pack(fill="x", pady=(0, 4))
+        self.o_nhap_mat_khau.pack(fill="x", pady=(0, 4))
 
-        self.error_lbl = ctk.CTkLabel(form, text="",
+        self.nhan_loi = ctk.CTkLabel(form, text="",
                                        font=ctk.CTkFont(size=11),
                                        text_color=RED)
-        self.error_lbl.pack(fill="x", pady=(4, 0))
+        self.nhan_loi.pack(fill="x", pady=(4, 0))
 
-        self.login_btn = ctk.CTkButton(
+        self.nut_dang_nhap = ctk.CTkButton(
             form, text="ĐĂNG NHẬP",
-            font=ctk.CTkFont(size=13, weight="bold"),
-            height=48, corner_radius=12,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=50, corner_radius=14,
             fg_color=ORANGE, hover_color=ORANGE_DARK,
             text_color=WHITE,
-            command=self._do_login
+            command=self._thuc_hien_dang_nhap
         )
-        self.login_btn.pack(fill="x", pady=(16, 0))
+        self.nut_dang_nhap.pack(fill="x", pady=(24, 0))
 
         # Footer
-        ctk.CTkLabel(card, text="© 2025 Sports Club Pro System",
+        ctk.CTkLabel(card, text="© 2025 Hệ Thống Quản Lý Câu Lạc Bộ Thể Thao",
                      font=ctk.CTkFont(size=10), text_color=TEXT_MUTED).pack(pady=(0, 32))
 
         # Bind Enter key
-        self.password_entry.bind("<Return>", lambda e: self._do_login())
-        self.username_entry.bind("<Return>", lambda e: self.password_entry.focus())
+        self.o_nhap_mat_khau.bind("<Return>", lambda e: self._thuc_hien_dang_nhap())
+        self.o_nhap_ten_dang_nhap.bind("<Return>", lambda e: self.o_nhap_mat_khau.focus())
 
         # Check connection
-        self.after(200, self._check_connection)
+        self.after(200, self._kiem_tra_ket_noi)
 
-    def _check_connection(self):
-        ok = test_connection()
-        if ok:
-            self.conn_lbl.configure(text="● Đã kết nối SQL Server", text_color=EMERALD)
-        else:
-            self.conn_lbl.configure(text="● Không thể kết nối SQL Server", text_color=RED)
+    def _kiem_tra_ket_noi(self):
+        """Kiểm tra kết nối DB trong background thread — không block UI."""
+        def _check():
+            ok = test_connection()
+            # Cập nhật label trên main thread
+            if ok:
+                self.after(0, lambda: self.nhan_ket_noi.configure(
+                    text="● Đã kết nối MySQL (XAMPP)", text_color=EMERALD))
+            else:
+                self.after(0, lambda: self.nhan_ket_noi.configure(
+                    text="● Không thể kết nối MySQL (XAMPP)", text_color=RED))
+        threading.Thread(target=_check, daemon=True).start()
 
-    def _do_login(self):
-        username = self.username_entry.get().strip()
-        password = self.password_entry.get().strip()
+    def _thuc_hien_dang_nhap(self):
+        ten_dang_nhap = self.o_nhap_ten_dang_nhap.get().strip()
+        mat_khau = self.o_nhap_mat_khau.get().strip()
 
-        if not username or not password:
-            self.error_lbl.configure(text="Vui lòng nhập đầy đủ thông tin")
+        if not ten_dang_nhap or not mat_khau:
+            self.nhan_loi.configure(text="Vui lòng nhập đầy đủ thông tin")
             return
 
-        self.login_btn.configure(state="disabled", text="Đang đăng nhập...")
-        self.error_lbl.configure(text="")
-        self.after(100, lambda: self._attempt_login(username, password))
+        self.nut_dang_nhap.configure(state="disabled", text="Đang đăng nhập...")
+        self.nhan_loi.configure(text="")
+        self.after(100, lambda: self._thu_dang_nhap(ten_dang_nhap, mat_khau))
 
-    def _attempt_login(self, username, password):
-        try:
-            user = us.login(username, password)
-            if user:
-                self.on_login_success(user)
-            else:
-                self.error_lbl.configure(text="Sai tên đăng nhập hoặc mật khẩu")
-                self.login_btn.configure(state="normal", text="ĐĂNG NHẬP")
-        except Exception as e:
-            self.error_lbl.configure(text=f"Lỗi kết nối: {e}")
-            self.login_btn.configure(state="normal", text="ĐĂNG NHẬP")
+    def _thu_dang_nhap(self, ten_dang_nhap, mat_khau):
+        """Chạy query trong background thread, cập nhật UI vía after()."""
+        def _worker():
+            try:
+                nguoi_dung = us.dang_nhap(ten_dang_nhap, mat_khau)
+                if nguoi_dung:
+                    self.after(0, lambda: self.khi_dang_nhap_thanh_cong(nguoi_dung))
+                else:
+                    self.after(0, lambda: [
+                        self.nhan_loi.configure(text="Sai tên đăng nhập hoặc mật khẩu"),
+                        self.nut_dang_nhap.configure(state="normal", text="ĐĂNG NHẬP")
+                    ])
+            except Exception as e:
+                self.after(0, lambda err=e: [
+                    self.nhan_loi.configure(text=f"Lỗi kết nối: {err}"),
+                    self.nut_dang_nhap.configure(state="normal", text="ĐĂNG NHẬP")
+                ])
+        threading.Thread(target=_worker, daemon=True).start()

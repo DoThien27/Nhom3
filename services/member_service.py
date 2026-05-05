@@ -1,87 +1,190 @@
 from typing import List
-from database.db_connection import get_connection
-from models.models import Member
+from database.db_connection import get_db_context
+from utils.logger import logger
+from models.models import HoiVien
 
 
-def get_all() -> List[Member]:
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT m.*, p.name as activePlanName, u.fullName as assignedPTName
-        FROM Members m
-        LEFT JOIN Plans p ON m.activePlanId = p.id
-        LEFT JOIN Users u ON m.assignedPTId = u.id
-    """)
-    members = []
-    for row in cur.fetchall():
-        members.append(Member(
-            id=str(row.id),
-            fullName=row.fullName,
-            phone=row.phone or "",
-            email=row.email or "",
-            joinDate=str(row.joinDate) if row.joinDate else "",
-            status=row.status or "ACTIVE",
-            activePlanId=row.activePlanId,
-            activePlanName=row.activePlanName,
-            expiryDate=str(row.expiryDate) if row.expiryDate else None,
-            assignedPTId=row.assignedPTId,
-            assignedPTName=row.assignedPTName,
-            weight=float(row.weight) if row.weight else 0.0,
-            previousWeight=float(row.previousWeight) if row.previousWeight else 0.0,
-            avatar=row.avatar,
-            username=row.username,
-            password=row.password,
-            homeTown=row.homeTown if hasattr(row, 'homeTown') else None,
-        ))
-    return members
+def lay_tat_ca() -> List[HoiVien]:
+    try:
+        with get_db_context() as (conn, cur):
+            cur.execute("""
+                SELECT m.*, p.name as activePlanName, u.fullName as assignedPTName
+                FROM Members m
+                LEFT JOIN Plans p ON m.activePlanId = p.id
+                LEFT JOIN Users u ON m.assignedPTId = u.id
+            """)
+            members = []
+            for row in cur.fetchall():
+                members.append(HoiVien(
+                    id=str(row.id),
+                    ho_ten=row.fullName or "",
+                    so_dien_thoai=row.phone or "",
+                    email=row.email or "",
+                    ngay_gia_nhap=str(row.joinDate) if row.joinDate else "",
+                    trang_thai=row.status or "ACTIVE",
+                    id_goi_tap_hien_tai=row.activePlanId,
+                    ten_goi_tap_hien_tai=row.activePlanName,
+                    ngay_het_han=str(row.expiryDate) if row.expiryDate else None,
+                    id_pt_phu_trach=row.assignedPTId,
+                    ten_pt_phu_trach=row.assignedPTName,
+                    can_nang=float(row.weight) if row.weight else 0.0,
+                    ten_dang_nhap=row.username,
+                    mat_khau=row.password,
+                    que_quan=row.homeTown if row.homeTown else None,
+                ))
+            return members
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise
+
+def dem_tong(keyword: str = "", filters: dict = None) -> int:
+    try:
+        with get_db_context() as (conn, cur):
+            query = "SELECT COUNT(*) as c FROM Members m WHERE 1=1"
+            params = []
+            if keyword:
+                query += " AND (m.fullName LIKE %s OR m.phone LIKE %s)"
+                params.extend([f"%{keyword}%", f"%{keyword}%"])
+            if filters and filters.get('status') and filters['status'] != 'Tất cả':
+                # Convert Vietnamese status back to Enum if needed, or filter handles it
+                status_map = {"Hoạt động": "ACTIVE", "Hết hạn": "EXPIRED", "Chờ duyệt": "PENDING"}
+                status = status_map.get(filters['status'], filters['status'])
+                query += " AND m.status = %s"
+                params.append(status)
+                
+            cur.execute(query, params)
+            return cur.fetchone()['c'] or 0
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        return 0
+
+def lay_phan_trang(page: int, page_size: int, keyword: str = "", filters: dict = None) -> List[HoiVien]:
+    try:
+        with get_db_context() as (conn, cur):
+            query = """
+                SELECT m.*, p.name as activePlanName, u.fullName as assignedPTName
+                FROM Members m
+                LEFT JOIN Plans p ON m.activePlanId = p.id
+                LEFT JOIN Users u ON m.assignedPTId = u.id
+                WHERE 1=1
+            """
+            params = []
+            if keyword:
+                query += " AND (m.fullName LIKE %s OR m.phone LIKE %s)"
+                params.extend([f"%{keyword}%", f"%{keyword}%"])
+            if filters and filters.get('status') and filters['status'] != 'Tất cả':
+                status_map = {"Hoạt động": "ACTIVE", "Hết hạn": "EXPIRED", "Chờ duyệt": "PENDING"}
+                status = status_map.get(filters['status'], filters['status'])
+                query += " AND m.status = %s"
+                params.append(status)
+                
+            query += " ORDER BY m.joinDate DESC LIMIT %s OFFSET %s"
+            params.extend([page_size, (page - 1) * page_size])
+            
+            cur.execute(query, params)
+            members = []
+            for row in cur.fetchall():
+                members.append(HoiVien(
+                    id=str(row.id),
+                    ho_ten=row.fullName or "",
+                    so_dien_thoai=row.phone or "",
+                    email=row.email or "",
+                    ngay_gia_nhap=str(row.joinDate) if row.joinDate else "",
+                    trang_thai=row.status or "ACTIVE",
+                    id_goi_tap_hien_tai=row.activePlanId,
+                    ten_goi_tap_hien_tai=row.activePlanName,
+                    ngay_het_han=str(row.expiryDate) if row.expiryDate else None,
+                    id_pt_phu_trach=row.assignedPTId,
+                    ten_pt_phu_trach=row.assignedPTName,
+                    can_nang=float(row.weight) if row.weight else 0.0,
+                    ten_dang_nhap=row.username,
+                    mat_khau=row.password,
+                    que_quan=row.homeTown if row.homeTown else None,
+                ))
+            return members
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        return []
 
 
-def add(member: Member) -> Member:
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO Members (id, fullName, phone, email, joinDate, status, weight, "
-        "avatar, username, password) VALUES (?,?,?,?,?,?,?,?,?,?)",
-        member.id, member.fullName, member.phone, member.email,
-        member.joinDate, member.status, member.weight,
-        member.avatar, member.username, member.password
-    )
-    conn.commit()
-    return member
+
+def them(hoi_vien: HoiVien) -> HoiVien:
+    try:
+        with get_db_context() as (conn, cur):
+            cur.execute(
+                "INSERT INTO Members (id, fullName, phone, email, joinDate, status, weight, "
+                "username, password, homeTown) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (hoi_vien.id, hoi_vien.ho_ten, hoi_vien.so_dien_thoai, hoi_vien.email,
+                 hoi_vien.ngay_gia_nhap, hoi_vien.trang_thai,
+                 hoi_vien.can_nang,
+                 hoi_vien.ten_dang_nhap, hoi_vien.mat_khau,
+                 hoi_vien.que_quan)
+            )
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise
+    return hoi_vien
 
 
-def update(member: Member) -> Member:
-    conn = get_connection()
-    cur = conn.cursor()
-    # Lấy cân nặng cũ
-    cur.execute("SELECT weight FROM Members WHERE id=?", member.id)
-    row = cur.fetchone()
-    prev_weight = member.previousWeight
-    if row and row.weight != member.weight:
-        prev_weight = float(row.weight) if row.weight else 0.0
-
-    cur.execute("""
-        UPDATE Members SET
-            fullName=?, phone=?, email=?, status=?,
-            weight=?, previousWeight=?,
-            activePlanId=?, expiryDate=?, assignedPTId=?,
-            username=?
-        WHERE id=?
-    """,
-        member.fullName, member.phone, member.email, member.status,
-        member.weight, prev_weight,
-        member.activePlanId, member.expiryDate, member.assignedPTId,
-        member.username, member.id
-    )
-    if member.password:
-        cur.execute("UPDATE Members SET password=? WHERE id=?", member.password, member.id)
-    conn.commit()
-    member.previousWeight = prev_weight
-    return member
+def cap_nhat(hoi_vien: HoiVien) -> HoiVien:
+    try:
+        with get_db_context() as (conn, cur):
+            cur.execute("""
+                UPDATE Members SET
+                    fullName=%s, phone=%s, email=%s, status=%s,
+                    weight=%s,
+                    activePlanId=%s, expiryDate=%s, assignedPTId=%s,
+                    username=%s, homeTown=%s
+                WHERE id=%s
+            """,
+                (hoi_vien.ho_ten, hoi_vien.so_dien_thoai, hoi_vien.email, hoi_vien.trang_thai,
+                 hoi_vien.can_nang,
+                 hoi_vien.id_goi_tap_hien_tai, hoi_vien.ngay_het_han, hoi_vien.id_pt_phu_trach,
+                 hoi_vien.ten_dang_nhap, hoi_vien.que_quan, hoi_vien.id)
+            )
+            if hoi_vien.mat_khau:
+                cur.execute("UPDATE Members SET password=%s WHERE id=%s",
+                            (hoi_vien.mat_khau, hoi_vien.id))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise
+    return hoi_vien
 
 
-def delete(member_id: str) -> None:
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM Members WHERE id=?", member_id)
-    conn.commit()
+def xoa(id_hoi_vien: str) -> None:
+    try:
+        with get_db_context() as (conn, cur):
+            cur.execute("DELETE FROM Members WHERE id=%s", (id_hoi_vien,))
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise
+
+
+def id_hlv(id_hlv_: str) -> List[HoiVien]:
+    """Lấy danh sách hội viên được phân công cho HLV"""
+    try:
+        with get_db_context() as (conn, cur):
+            cur.execute("""
+                SELECT m.* FROM Members m WHERE m.assignedPTId=%s
+            """, (id_hlv_,))
+            members = []
+            for row in cur.fetchall():
+                members.append(HoiVien(
+                    id=str(row.id),
+                    ho_ten=row.fullName or "",
+                    so_dien_thoai=row.phone or "",
+                    email=row.email or "",
+                    ngay_gia_nhap=str(row.joinDate) if row.joinDate else "",
+                    trang_thai=row.status or "ACTIVE",
+                    can_nang=float(row.weight) if row.weight else 0.0,
+                    ten_dang_nhap=row.username,
+                    que_quan=row.homeTown if row.homeTown else None,
+                ))
+            return members
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        raise

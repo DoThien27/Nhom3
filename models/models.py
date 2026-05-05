@@ -1,126 +1,120 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Literal
 
-Role = Literal["ADMIN", "MANAGER", "RECEPTIONIST", "PT", "MEMBER"]
-MemberStatus = Literal["ACTIVE", "EXPIRED", "PENDING"]
-PlanType = Literal["MONTHLY", "SESSION", "PT"]
-ProductCategory = Literal["EQUIPMENT", "SUPPLEMENT", "DRINK"]
-InvoiceMethod = Literal["CASH", "TRANSFER", "E-WALLET"]
-AttendanceType = Literal["GYM", "CLASS", "PT"]
+VaiTro = Literal["ADMIN", "MANAGER", "RECEPTIONIST", "PT", "MEMBER"]
+TrangThaiHoiVien = Literal["ACTIVE", "EXPIRED", "PENDING"]
+LoaiGoiTap = Literal["MEMBERSHIP", "CLASS", "PT"]
+LoaiKhoanThu = Literal["MEMBERSHIP", "CLASS", "FACILITY", "EVENT", "OTHER"]
+TrangThaiHoaDon = Literal["UNPAID", "PARTIAL", "PAID", "CANCELLED"]
+PhuongThucThanhToan = Literal["CASH", "BANK_TRANSFER", "CARD", "E_WALLET", "OTHER"]
 
 
 @dataclass
-class User:
+class NguoiDung:
     id: str
-    username: str
-    fullName: str
-    role: Role
-    password: Optional[str] = None
-    avatar: Optional[str] = None
-    specialty: Optional[str] = None
-    activeStudents: int = 0
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    idCard: Optional[str] = None
+    ten_dang_nhap: str
+    ho_ten: str
+    vai_tro: VaiTro
+    mat_khau: Optional[str] = None
+    chuyen_mon: Optional[str] = None
+    hoc_vien_dang_theo: int = 0
+    so_dien_thoai: Optional[str] = None
+    dia_chi: Optional[str] = None
+    cmnd_cccd: Optional[str] = None
 
 
 @dataclass
-class Member:
+class HoiVien:
     id: str
-    fullName: str
-    phone: str
+    ho_ten: str
+    so_dien_thoai: str
     email: str
-    joinDate: str
-    status: MemberStatus = "ACTIVE"
-    activePlanId: Optional[str] = None
-    activePlanName: Optional[str] = None
-    expiryDate: Optional[str] = None
-    remainingSessions: Optional[int] = None
-    assignedPTId: Optional[str] = None
-    assignedPTName: Optional[str] = None
-    weight: float = 0.0
-    previousWeight: float = 0.0
-    avatar: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    homeTown: Optional[str] = None
+    ngay_gia_nhap: str
+    trang_thai: TrangThaiHoiVien = "ACTIVE"
+    id_goi_tap_hien_tai: Optional[str] = None
+    ten_goi_tap_hien_tai: Optional[str] = None
+    ngay_het_han: Optional[str] = None
+    so_buoi_con_lai: Optional[int] = None
+    id_pt_phu_trach: Optional[str] = None
+    ten_pt_phu_trach: Optional[str] = None
+    can_nang: float = 0.0
+    ten_dang_nhap: Optional[str] = None
+    mat_khau: Optional[str] = None
+    que_quan: Optional[str] = None
 
 
 @dataclass
-class Plan:
+class GoiTap:
     id: str
-    name: str
-    type: PlanType
-    price: float
-    description: str
-    durationMonths: Optional[int] = None
-    sessions: Optional[int] = None
+    ten: str
+    loai: LoaiGoiTap
+    gia: float
+    mo_ta: str
+    thoi_han_thang: Optional[int] = None
+    so_buoi: Optional[int] = None
 
 
 @dataclass
-class ClassSession:
+class BuoiHoc:
     id: str
-    name: str
-    trainerId: str
-    time: str
-    dayOfWeek: str
-    capacity: int
-    enrolledMemberIds: List[str] = field(default_factory=list)
+    ten: str
+    id_hlv: str
+    gio: str
+    thu_trong_tuan: str
+    suc_chua: int
+    gia: float = 0.0
+    danh_sach_id_hoi_vien: List[str] = field(default_factory=list)
+
+
 
 
 @dataclass
-class Product:
+class ChiTietHoaDon:
+    ten: str                                    # item_name
+    so_luong: int                               # quantity
+    gia: float                                  # unit_price
+    loai_khoan_thu: str = "OTHER"               # item_type: MEMBERSHIP/CLASS/FACILITY/EVENT/OTHER
+    id_tham_chieu: Optional[str] = None         # reference_id (plan_id, class_id, ...)
+    giam_gia_dong: float = 0.0                  # discount per line
+    thanh_tien: float = 0.0                     # line_total = qty*gia - giam_gia_dong
+    ghi_chu: str = ""                           # item_note
+
+
+@dataclass
+class HoaDon:
     id: str
-    name: str
-    category: ProductCategory
-    price: float
-    stock: int
-    minStockAlert: int
+    id_hoi_vien: str
+    danh_sach_muc: List[ChiTietHoaDon]
+    tong_tien: float                            # total_amount (sum of line_totals)
+    ngay: str                                   # invoice_date
+    phuong_thuc: str                            # payment_method
+    giam_gia: float = 0.0                       # discount_amount (invoice-level)
+    thanh_tien: float = 0.0                     # final_amount = tong_tien - giam_gia
+    da_tra: float = 0.0                         # paid_amount
+    con_lai: float = 0.0                        # remaining_amount = thanh_tien - da_tra
+    trang_thai_thanh_toan: str = "UNPAID"       # payment_status
+    ghi_chu: str = ""                           # note
+    nguoi_tao: str = ""                         # created_by
 
 
 @dataclass
-class InvoiceItem:
-    name: str
-    quantity: int
-    price: float
-
-
-@dataclass
-class Invoice:
+class SuKien:
     id: str
-    memberId: str
-    items: List[InvoiceItem]
-    total: float
-    date: str
-    method: InvoiceMethod
+    ten: str
+    mo_ta: str
+    ngay: str
+    gio: str
+    dia_diem: str
+    suc_chua: int
+    gia: float = 0.0
+    trang_thai: str = "UPCOMING"
 
 
 @dataclass
-class Event:
+class NguoiThamGiaSuKien:
     id: str
-    name: str
-    description: str
-    date: str
-    time: str
-    location: str
-    capacity: int
-    status: str = "UPCOMING"
-
-
-@dataclass
-class EventParticipant:
-    id: str
-    eventId: str
-    memberId: str
-    memberName: str
-    registerDate: str
-    status: str = "PENDING"
-
-
-@dataclass
-class RenewalRequest:
-    id: str
-    memberId: str
-    planId: str
-    requestDate: str
-    status: str = "PENDING"
+    id_su_kien: str
+    id_hoi_vien: str
+    ten_hoi_vien: str
+    ngay_dang_ky: str
+    trang_thai: str = "PENDING"
