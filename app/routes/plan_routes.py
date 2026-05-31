@@ -2,12 +2,12 @@ from flask import Blueprint, request, jsonify
 from app.utils import safe_dict, roles_required, handle_db_error
 from app.services import PlanService
 from app.models import GoiTap
-import uuid
+from app.utils import generate_sequential_id
 
 plan_bp = Blueprint('plan_bp', __name__)
 
 @plan_bp.route('/api/plans', methods=['GET'])
-@roles_required('ADMIN', 'PT')
+@roles_required('ADMIN')
 def get_plans():
     try:
         data = PlanService.lay_tat_ca()
@@ -20,7 +20,7 @@ def add_plan():
     try:
         data = request.json
         p = GoiTap(
-            id=str(uuid.uuid4())[:8],
+            id=generate_sequential_id('Plans', 'PLN'),
             name=data.get('name'),
             type=data.get('type'),
             price=float(data.get('price', 0)),

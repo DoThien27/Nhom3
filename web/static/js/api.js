@@ -8,8 +8,10 @@ window.API = {
       
       // Xử lý lỗi Unauthorized (401)
       if (res.status === 401) { 
-          if (window._appLogout) window._appLogout(); 
-          return { success: false, error: 'Hết phiên làm việc' }; 
+          if (!url.includes('/auth/login')) {
+              if (window._appLogout) window._appLogout(); 
+              return { success: false, error: 'Hết phiên làm việc' }; 
+          }
       }
       
       // Kiểm tra nếu không phải JSON

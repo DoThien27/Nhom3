@@ -3,18 +3,34 @@ from datetime import datetime
 
 class ReportService:
     @staticmethod
-    def get_full_report():
+    def get_full_report(month=None):
         with get_db_context() as (conn, cur):
-            # 1. Monthly Revenue
-            cur.execute("SELECT SUM(paidAmount) as s FROM Invoices WHERE paymentStatus != 'CANCELLED' AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())")
+            # Base conditions
+            date_cond = ""
+            join_cond = ""
+            params = []
+            if month:
+                y, m = month.split('-')
+                date_cond = " AND MONTH(date) = %s AND YEAR(date) = %s"
+                join_cond = " AND MONTH(joinDate) = %s AND YEAR(joinDate) = %s"
+                params = [int(m), int(y)]
+
+            # 1. Period Revenue
+            if month:
+                cur.execute("SELECT SUM(paidAmount) as s FROM Invoices WHERE paymentStatus != 'CANCELLED'" + date_cond, tuple(params))
+            else:
+                cur.execute("SELECT SUM(paidAmount) as s FROM Invoices WHERE paymentStatus != 'CANCELLED' AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())")
             rev_month = cur.fetchone()["s"] or 0
             
             # 2. Total Revenue
             cur.execute("SELECT SUM(paidAmount) as s FROM Invoices WHERE paymentStatus != 'CANCELLED'")
             rev_total = cur.fetchone()["s"] or 0
             
-            # 3. New Members this month
-            cur.execute("SELECT COUNT(*) as c FROM Members WHERE MONTH(joinDate) = MONTH(CURRENT_DATE()) AND YEAR(joinDate) = YEAR(CURRENT_DATE())")
+            # 3. New Members in period
+            if month:
+                cur.execute("SELECT COUNT(*) as c FROM Members WHERE 1=1" + join_cond, tuple(params))
+            else:
+                cur.execute("SELECT COUNT(*) as c FROM Members WHERE MONTH(joinDate) = MONTH(CURRENT_DATE()) AND YEAR(joinDate) = YEAR(CURRENT_DATE())")
             new_members = cur.fetchone()["c"] or 0
             
             # 4. Active Classes
@@ -42,23 +58,24 @@ class ReportService:
             plan_data = [dict(r) for r in cur.fetchall()]
             
             # 7. Invoices by Status
-            cur.execute("""
+            cur.execute(f"""
                 SELECT paymentStatus as status, COUNT(*) as count, SUM(finalAmount) as total 
                 FROM Invoices 
+                WHERE 1=1 {date_cond}
                 GROUP BY paymentStatus
-            """)
+            """, tuple(params))
             status_data = [dict(r) for r in cur.fetchall()]
             
             # 8. Top Members
-            cur.execute("""
+            cur.execute(f"""
                 SELECT m.fullName as name, SUM(i.paidAmount) as total 
                 FROM Invoices i 
                 JOIN Members m ON i.memberId = m.id 
-                WHERE i.paymentStatus != 'CANCELLED'
+                WHERE i.paymentStatus != 'CANCELLED' {date_cond}
                 GROUP BY m.id 
                 ORDER BY total DESC 
                 LIMIT 5
-            """)
+            """, tuple(params))
             top_members = [dict(r) for r in cur.fetchall()]
             
             return {

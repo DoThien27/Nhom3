@@ -22,7 +22,7 @@ PAGE_RENDERERS['dashboard'] = async (container) => {
                 <tbody>${(d.classesSoonFull || []).map(c => `<tr>
                   <td class="text-white font-bold">${escHtml(c.name)}</td>
                   <td class="text-slate-500">${c.enrolled}/${c.capacity}</td>
-                  <td><span class="text-[10px] px-2 py-0.5 bg-orange-500/10 text-orange-500 rounded-full font-bold">Sắp đầy</span></td>
+                  <td><span class="text-xs px-2 py-0.5 bg-orange-500/10 text-orange-500 rounded-full font-bold">Sắp đầy</span></td>
                 </tr>`).join('')}</tbody>
               </table>
               ${(d.classesSoonFull || []).length === 0 ? '<div class="p-10 text-center text-slate-500 text-xs">Không có lớp nào quá tải.</div>' : ''}
@@ -64,7 +64,7 @@ PAGE_RENDERERS['dashboard'] = async (container) => {
 
 function renderKPI(l,v,i,c) {
   const cls = { orange:'text-orange-500 bg-orange-500/10', purple:'text-purple-500 bg-purple-500/10', blue:'text-blue-500 bg-blue-500/10', green:'text-green-500 bg-green-500/10', yellow:'text-yellow-500 bg-yellow-500/10' };
-  return `<div class="bg-darkcard p-5 rounded-2xl border border-darkborder"><div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${cls[c]}"><i data-lucide="${i}" class="w-5 h-5"></i></div><div class="text-xl font-black text-white">${v}</div><div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${l}</div></div>`;
+  return `<div class="bg-darkcard p-5 rounded-2xl border border-darkborder"><div class="w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${cls[c]}"><i data-lucide="${i}" class="w-5 h-5"></i></div><div class="text-xl font-bold text-white">${v}</div><div class="text-xs font-bold text-slate-500 uppercase tracking-widest">${l}</div></div>`;
 }
 
 /* ─── MEMBERS ──────────────────────────────────────────────────────────────── */
@@ -72,8 +72,8 @@ PAGE_RENDERERS['members'] = async (container) => {
   container.innerHTML = `
     <div class="page-enter">
       <div class="flex items-center justify-between mb-8">
-        <h2 class="text-2xl font-black text-white uppercase tracking-tight">QUẢN LÝ HỘI VIÊN</h2>
-        <button onclick="editMember()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+        <h2 class="text-2xl font-bold text-white uppercase tracking-tight">QUẢN LÝ HỘI VIÊN</h2>
+        <button onclick="editMember()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform admin-only">
           <i data-lucide="plus" class="w-4 h-4"></i> Thêm mới
         </button>
       </div>
@@ -96,45 +96,138 @@ window.loadMembers = async function(keyword = '') {
       const k = keyword.toLowerCase();
       data = data.filter(m => (m.fullName||'').toLowerCase().includes(k) || (m.phone||'').includes(k) || (m.username||'').toLowerCase().includes(k));
     }
-    document.getElementById('member-grid-wrap').innerHTML = data.map(m => `
-      <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl hover:shadow-primary-500/5 transition-all group page-enter">
+    document.getElementById('member-grid-wrap').innerHTML = data.map(m => {
+      let weightDiffHtml = '';
+      if (m.previousWeight > 0 && m.weight > 0) {
+        const diff = (m.weight - m.previousWeight).toFixed(1);
+        if (diff < 0) weightDiffHtml = `<span class="text-green-400 text-xs ml-1">(📉 ${Math.abs(diff)}kg)</span>`;
+        else if (diff > 0) weightDiffHtml = `<span class="text-red-400 text-xs ml-1">(📈 +${diff}kg)</span>`;
+        else weightDiffHtml = `<span class="text-slate-400 text-xs ml-1">(-)</span>`;
+      }
+      return `
+      <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl hover:shadow-primary-500/5 transition-all group page-enter flex flex-col">
         <div class="flex items-center gap-4 mb-6">
-          <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-primary-500 text-2xl font-black border border-primary-500/20 shadow-inner">${(m.fullName||'H')[0].toUpperCase()}</div>
-          <div><h4 class="text-lg font-black text-white uppercase tracking-tight">${escHtml(m.fullName)}</h4><div class="text-xs font-bold text-slate-500">@${escHtml(m.username || 'chua_co')}</div></div>
+          <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-primary-500 text-2xl font-bold border border-primary-500/20 shadow-inner">${(m.fullName||'H')[0].toUpperCase()}</div>
+          <div class="flex-1">
+            <div class="flex items-start justify-between">
+              <h4 class="text-lg font-bold text-white uppercase tracking-tight pr-2">${escHtml(m.fullName)}</h4>
+              ${statusBadge(m.status || 'PENDING')}
+            </div>
+            <div class="text-xs font-bold text-slate-500 mt-1">${m.email ? escHtml(m.email) : (m.username ? '@' + escHtml(m.username) : 'Chưa có email/username')}</div>
+          </div>
         </div>
         <div class="space-y-4 mb-8">
-          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3 h-3"></i> Liên hệ</span><span class="text-sm font-bold text-white">${escHtml(m.phone)}</span></div>
-          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="calendar" class="w-3 h-3"></i> Ngày sinh</span><span class="text-sm font-bold text-white">${m.birthDate ? fmtDate(m.birthDate) : '---'}</span></div>
-          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3 h-3"></i> Giới tính</span><span class="text-sm font-bold text-white">${escHtml(m.gender || 'Nam')}</span></div>
-          <div class="flex items-center justify-between py-2"><span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3"></i> Quê quán</span><span class="text-sm font-bold text-white truncate max-w-[150px]">${escHtml(m.homeTown || '---')}</span></div>
+          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3 h-3"></i> Liên hệ</span><span class="text-sm font-bold text-white">${escHtml(m.phone)}</span></div>
+          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="calendar" class="w-3 h-3"></i> Ngày sinh</span><span class="text-sm font-bold text-white">${m.birthDate ? fmtDate(m.birthDate) : '---'}</span></div>
+          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="user" class="w-3 h-3"></i> Giới tính</span><span class="text-sm font-bold text-white">${escHtml(m.gender || 'Nam')}</span></div>
+          <div class="flex items-center justify-between py-2 border-b border-darkborder/50"><span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3"></i> Cân nặng</span><span class="text-sm font-bold text-white">${m.previousWeight||0} ➔ ${m.weight||0} kg ${weightDiffHtml}</span></div>
+          <div class="flex items-center justify-between py-2"><span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3"></i> Quê quán</span><span class="text-sm font-bold text-white truncate max-w-[150px]">${escHtml(m.homeTown || '---')}</span></div>
         </div>
-        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-darkborder/50">
-          <button onclick='editMember(${JSON.stringify(m).replace(/'/g,"&#39;")})' class="flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-2xl transition-all"><i data-lucide="edit-3" class="w-3 h-3"></i> Sửa </button>
-          <button onclick="deleteItem('members','${m.id}',loadMembers)" class="flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-2xl transition-all"><i data-lucide="trash-2" class="w-3 h-3"></i> Xóa </button>
+        <div class="mt-auto flex flex-col gap-2 pt-4 border-t border-darkborder/50">
+          <button onclick='manageMemberPlan(${JSON.stringify(m).replace(/'/g,"&#39;")})' class="w-full flex items-center justify-center gap-2 py-3 bg-purple-500/10 hover:bg-purple-500 text-purple-500 hover:text-white text-xs font-bold uppercase rounded-2xl transition-all admin-only"><i data-lucide="credit-card" class="w-4 h-4"></i> Quản lý Gói tập </button>
+          <div class="grid grid-cols-3 gap-2">
+            <button onclick="viewMemberDetails('${m.id}')" class="flex items-center justify-center gap-1.5 py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white text-xs font-bold uppercase rounded-2xl transition-all"><i data-lucide="eye" class="w-3 h-3"></i> Xem </button>
+            <button onclick='editMember(${JSON.stringify(m).replace(/'/g,"&#39;")})' class="flex items-center justify-center gap-1.5 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-2xl transition-all admin-only"><i data-lucide="edit-3" class="w-3 h-3"></i> Sửa </button>
+            <button onclick="deleteItem('members','${m.id}',loadMembers)" class="flex items-center justify-center gap-1.5 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-2xl transition-all admin-only"><i data-lucide="trash-2" class="w-3 h-3"></i> Xóa </button>
+          </div>
         </div>
-      </div>`).join('') + (data.length === 0 ? '<div class="col-span-full p-20 text-center text-slate-500 font-bold uppercase tracking-widest opacity-50">Không tìm thấy hội viên</div>' : '');
+      </div>`;
+    }).join('') + (data.length === 0 ? '<div class="col-span-full p-20 text-center text-slate-500 font-bold uppercase tracking-widest opacity-50">Không tìm thấy hội viên</div>' : '');
     lucide.createIcons({ nodes: [document.getElementById('member-grid-wrap')] });
   } catch(e) { document.getElementById('member-grid-wrap').innerHTML = `<div class="col-span-full p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
 }
 window.editMember = async function(m=null) {
-  const [tr, pl] = await Promise.all([API.get('/api/trainers'), API.get('/api/plans')]);
-  const trainers = tr.data||[], plans = pl.data||[];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${m?'Sửa hội viên':'Thêm hội viên'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  const tr = await API.get('/api/trainers');
+  const trainers = tr.data||[];
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${m?'Sửa hồ sơ hội viên':'Thêm hội viên'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="space-y-2"><label class="lbl">Họ tên *</label><input id="m-name" type="text" value="${escHtml(m?.fullName||'')}" class="form-input" placeholder="Nguyễn Văn A"></div>
     <div class="space-y-2"><label class="lbl">SĐT *</label><input id="m-phone" type="text" value="${escHtml(m?.phone||'')}" class="form-input" placeholder="0912345678"></div>
     <div class="space-y-2"><label class="lbl">Email</label><input id="m-email" type="email" value="${escHtml(m?.email||'')}" class="form-input" placeholder="email@example.com"></div>
     <div class="space-y-2"><label class="lbl">Ngày sinh</label><input id="m-dob" type="date" value="${m?.birthDate||''}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Giới tính</label><select id="m-gender" class="form-input"><option value="Nam" ${m?.gender==='Nam'?'selected':''}>Nam</option><option value="Nữ" ${m?.gender==='Nữ'?'selected':''}>Nữ</option></select></div>
-    <div class="space-y-2"><label class="lbl">Trạng thái</label><select id="m-status" class="form-input"><option value="ACTIVE" ${(m?.status||'ACTIVE')==='ACTIVE'?'selected':''}>Hoạt động</option><option value="EXPIRED" ${m?.status==='EXPIRED'?'selected':''}>Hết hạn</option><option value="PENDING" ${m?.status==='PENDING'?'selected':''}>Chờ duyệt</option></select></div>
-    <div class="col-span-2 space-y-2"><label class="lbl">Quê quán</label><input id="m-hometown" type="text" value="${escHtml(m?.homeTown||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">HLV Phụ trách</label><select id="m-pt" class="form-input"><option value="">-- Không có --</option>${trainers.map(t=>`<option value="${t.id}" ${m?.assignedPTId==t.id?'selected':''}>${escHtml(t.fullName)}</option>`).join('')}</select></div>
-    <div class="col-span-2 space-y-2"><label class="lbl">Gói tập</label><select id="m-plan" class="form-input"><option value="">-- Không có --</option>${plans.map(p=>`<option value="${p.id}" ${m?.activePlanId==p.id?'selected':''}>${escHtml(p.name)}</option>`).join('')}</select></div>
+    <div class="space-y-2"><label class="lbl">Cân nặng bắt đầu (kg)</label><input id="m-prev-weight" type="number" step="0.1" value="${m?.previousWeight||0}" class="form-input"></div>
+    <div class="space-y-2"><label class="lbl">Cân nặng hiện tại (kg)</label><input id="m-weight" type="number" step="0.1" value="${m?.weight||0}" class="form-input"></div>
+    <div class="col-span-2 space-y-2"><label class="lbl">Quê quán</label><input id="m-hometown" type="text" value="${escHtml(m?.homeTown||'')}" class="form-input"></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveMember('${m?.id||''}')" class="btn-primary">Lưu lại</button></div></div>`);
 }
 window.saveMember = async function(id) {
-  const body = { fullName:document.getElementById('m-name').value, phone:document.getElementById('m-phone').value, email:document.getElementById('m-email').value||'', birthDate:document.getElementById('m-dob').value, gender:document.getElementById('m-gender').value, homeTown:document.getElementById('m-hometown').value, assignedPTId:document.getElementById('m-pt').value, activePlanId:document.getElementById('m-plan').value, status:document.getElementById('m-status').value };
+  const body = { fullName:document.getElementById('m-name').value, phone:document.getElementById('m-phone').value, email:document.getElementById('m-email').value||'', birthDate:document.getElementById('m-dob').value, gender:document.getElementById('m-gender').value, homeTown:document.getElementById('m-hometown').value, assignedPTId:document.getElementById('m-pt').value, previousWeight:document.getElementById('m-prev-weight').value, weight:document.getElementById('m-weight').value };
   const res = id ? await API.put(`/api/members/${id}`, body) : await API.post('/api/members', body);
   if (res.success) { showToast('Đã lưu thành công!', 'success'); closeModal(); loadMembers(); } else showToast(res.error, 'error');
+}
+window.renewMember = function(id) {
+  customConfirm(
+    'Xác nhận gia hạn', 
+    'Bạn có chắc muốn gia hạn gói tập hiện tại cho hội viên này không? Hệ thống sẽ tạo thẻ và hóa đơn mới.',
+    async () => {
+      const res = await API.post(`/api/members/${id}/renew`);
+      if (res.success) { showToast('Gia hạn thành công! Vui lòng thanh toán hóa đơn mới.', 'success'); closeModal(); loadMembers(); } 
+      else showToast(res.error, 'error');
+    }
+  );
+}
+window.manageMemberPlan = async function(m) {
+  const pl = await API.get('/api/plans');
+  const plans = pl.data || [];
+  
+  let content = '';
+  if (!m.activePlanId) {
+    content = `
+      <div class="mb-6"><div class="p-4 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20 font-bold">Hội viên chưa có gói tập nào.</div></div>
+      <div class="space-y-2 mb-8"><label class="lbl">Chọn gói tập để đăng ký</label>
+        <select id="new-plan" class="form-input">
+          ${plans.map(p=>`<option value="${p.id}">${escHtml(p.name)} - ${fmtCurrency(p.price)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="registerPlan('${m.id}')" class="btn-primary">Đăng ký</button></div>
+    `;
+  } else {
+    content = `
+      <div class="mb-6"><div class="p-4 bg-green-500/10 text-green-500 rounded-xl border border-green-500/20">
+        <div class="text-xs font-bold uppercase mb-1">Gói hiện tại</div>
+        <div class="font-bold text-lg">${escHtml(m.planName)}</div>
+        <div class="text-xs mt-1">Trạng thái: ${m.status === 'EXPIRED' ? 'Đã hết hạn' : 'Đang kích hoạt'}</div>
+      </div></div>
+      
+      <div class="space-y-2 mb-8"><label class="lbl">Đổi sang gói tập khác</label>
+        <div class="flex gap-2">
+          <select id="change-plan" class="form-input flex-1" ${m.status === 'ACTIVE' ? 'disabled' : ''}>
+            ${plans.map(p=>`<option value="${p.id}" ${p.id==m.activePlanId?'disabled':''}>${escHtml(p.name)} - ${fmtCurrency(p.price)}</option>`).join('')}
+          </select>
+          <button onclick="changePlan('${m.id}')" class="btn-primary whitespace-nowrap px-4" ${m.status === 'ACTIVE' ? 'disabled' : ''}>Đổi gói</button>
+        </div>
+        ${m.status === 'ACTIVE' 
+          ? '<p class="text-xs text-red-500 mt-2">* Gói đang hoạt động. Bạn phải <b class="font-bold">Hủy gói</b> hiện tại trước mới được đổi sang gói khác.</p>' 
+          : '<p class="text-xs text-slate-500 mt-2">* Đổi gói sẽ tự động hủy thẻ cũ và sinh hóa đơn cho gói mới.</p>'}
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-darkborder/50">
+        <button onclick="renewMember('${m.id}')" class="flex items-center justify-center gap-2 py-3 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white text-sm font-bold uppercase rounded-xl transition-all"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Gia hạn gói này </button>
+        <button onclick="cancelPlan('${m.id}')" class="flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-sm font-bold uppercase rounded-xl transition-all"><i data-lucide="x-circle" class="w-4 h-4"></i> Hủy gói </button>
+      </div>
+    `;
+  }
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Quản lý Gói tập</h3>${content}</div>`);
+  lucide.createIcons();
+}
+window.registerPlan = async function(id) {
+  const planId = document.getElementById('new-plan').value;
+  const res = await API.post(`/api/members/${id}/plan/register`, { planId });
+  if (res.success) { showToast('Đăng ký thành công!', 'success'); closeModal(); loadMembers(); } else showToast(res.error, 'error');
+}
+window.changePlan = function(id) {
+  const planId = document.getElementById('change-plan').value;
+  customConfirm('Xác nhận đổi gói', 'Bạn có chắc muốn đổi sang gói tập này? Hệ thống sẽ hủy gói cũ và tạo hóa đơn cho gói mới.', async () => {
+    const res = await API.post(`/api/members/${id}/plan/change`, { planId });
+    if (res.success) { showToast('Đổi gói thành công!', 'success'); closeModal(); loadMembers(); } else showToast(res.error, 'error');
+  });
+}
+window.cancelPlan = function(id) {
+  customConfirm('Xác nhận hủy gói', 'Bạn có chắc muốn hủy gói tập hiện tại? Mọi thẻ đang kích hoạt của gói này sẽ bị thu hồi.', async () => {
+    const res = await API.post(`/api/members/${id}/plan/cancel`);
+    if (res.success) { showToast('Đã hủy gói tập!', 'success'); closeModal(); loadMembers(); } else showToast(res.error, 'error');
+  });
 }
 
 /* ─── TRAINERS ─────────────────────────────────────────────────────────────── */
@@ -143,8 +236,8 @@ PAGE_RENDERERS['trainers'] = async (container) => {
     <div class="page-enter">
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-          <h2 class="text-2xl font-black text-white uppercase tracking-tight">HUẤN LUYỆN VIÊN</h2>
-          <button onclick="editTrainer()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+          <h2 class="text-2xl font-bold text-white uppercase tracking-tight">HUẤN LUYỆN VIÊN</h2>
+          <button onclick="editTrainer()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform admin-only">
             <i data-lucide="plus" class="w-4 h-4"></i> Thêm HLV mới
           </button>
         </div>
@@ -174,35 +267,35 @@ window.loadTrainers = async function(keyword = '') {
     document.getElementById('trainer-grid-wrap').innerHTML = data.map(t => `
       <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl hover:shadow-primary-500/5 transition-all group page-enter text-center">
         <div class="flex flex-col items-center mb-6">
-          <div class="w-20 h-20 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 text-3xl font-black border border-blue-500/20 shadow-inner mb-4">
+          <div class="w-20 h-20 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 text-3xl font-bold border border-blue-500/20 shadow-inner mb-4">
             ${(t.fullName||'T')[0].toUpperCase()}
           </div>
-          <h4 class="text-xl font-black text-white uppercase tracking-tight">${escHtml(t.fullName)}</h4>
-          <div class="text-xs font-bold text-slate-500">@${escHtml(t.username || 'hlv_id')}</div>
+          <h4 class="text-xl font-bold text-white uppercase tracking-tight">${escHtml(t.fullName)}</h4>
+          <div class="text-xs font-bold text-slate-500">${t.email ? escHtml(t.email) : (t.username ? '@' + escHtml(t.username) : 'Chưa có thông tin')}</div>
         </div>
 
         <div class="space-y-4 mb-8 text-left">
           <div class="flex items-center justify-between py-2 border-b border-darkborder/50">
-            <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3 h-3"></i> Số điện thoại</span>
+            <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="phone" class="w-3 h-3"></i> Số điện thoại</span>
             <span class="text-sm font-bold text-white">${escHtml(t.phone || '---')}</span>
           </div>
           <div class="flex items-center justify-between py-2 border-b border-darkborder/50">
-            <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3"></i> Quê quán</span>
+            <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3"></i> Quê quán</span>
             <span class="text-sm font-bold text-white">${escHtml(t.address || '---')}</span>
           </div>
           <div class="flex items-center justify-between py-2 border-b border-darkborder/50">
-            <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="award" class="w-3 h-3"></i> Chuyên môn</span>
+            <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="award" class="w-3 h-3"></i> Chuyên môn</span>
             <span class="text-sm font-bold text-white">${escHtml(t.specialty || 'Chưa cập nhật')}</span>
           </div>
           <div class="flex items-center justify-between py-2">
-            <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="users" class="w-3 h-3"></i> Học viên</span>
+            <span class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i data-lucide="users" class="w-3 h-3"></i> Học viên</span>
             <span class="text-sm font-bold text-white">${t.activeStudents || 0} người</span>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-4 border-t border-darkborder/50">
-          <button onclick='editTrainer(${JSON.stringify(t).replace(/'/g,"&#39;")})' class="flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-2xl transition-all">Sửa</button>
-          <button onclick="deleteItem('trainers','${t.id}',loadTrainers)" class="flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-2xl transition-all">Xóa</button>
+          <button onclick='editTrainer(${JSON.stringify(t).replace(/'/g,"&#39;")})' class="flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-2xl transition-all admin-only">Sửa</button>
+          <button onclick="deleteItem('trainers','${t.id}',loadTrainers)" class="flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-2xl transition-all admin-only">Xóa</button>
         </div>
       </div>`).join('') + (data.length === 0 ? '<div class="col-span-full p-20 text-center text-slate-500 font-bold uppercase tracking-widest opacity-50">Không tìm thấy huấn luyện viên</div>' : '');
     lucide.createIcons({ nodes: [document.getElementById('trainer-grid-wrap')] });
@@ -210,7 +303,7 @@ window.loadTrainers = async function(keyword = '') {
 }
 
 window.editTrainer = function(t=null) {
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${t?'Sửa HLV':'Thêm HLV mới'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${t?'Sửa HLV':'Thêm HLV mới'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="col-span-2 space-y-2"><label class="lbl">Họ tên</label><input id="t-name" type="text" value="${escHtml(t?.fullName||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Số điện thoại</label><input id="t-phone" type="text" value="${escHtml(t?.phone||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Chuyên môn</label><input id="t-spec" type="text" value="${escHtml(t?.specialty||'')}" class="form-input"></div>
@@ -231,7 +324,7 @@ PAGE_RENDERERS['sports'] = async (container) => {
   container.innerHTML = `
     <div class="page-enter">
       <div class="flex items-center justify-between mb-8">
-        <h2 class="text-2xl font-black text-white uppercase tracking-tight">MÔN THẾ THAO</h2>
+        <h2 class="text-2xl font-bold text-white uppercase tracking-tight">MÔN THẾ THAO</h2>
         <div class="flex items-center gap-4">
           <div class="relative group w-64">
             <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-primary-500 transition-colors"></i>
@@ -239,7 +332,7 @@ PAGE_RENDERERS['sports'] = async (container) => {
               class="w-full bg-darkcard border border-darkborder rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
               oninput="loadSports(this.value)">
           </div>
-          <button onclick="editSport()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform">
+          <button onclick="editSport()" class="orange-gradient px-6 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 hover:scale-105 transition-transform admin-only">
             <i data-lucide="plus" class="w-4 h-4"></i> Thêm môn
           </button>
         </div>
@@ -264,38 +357,38 @@ window.loadSports = async function(keyword = '') {
           <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-3 text-white">
             <i data-lucide="trophy" class="w-6 h-6"></i>
           </div>
-          <h4 class="text-xl font-black text-white uppercase tracking-tight">${escHtml(s.sport_name)}</h4>
+          <h4 class="text-xl font-bold text-white uppercase tracking-tight">${escHtml(s.sport_name)}</h4>
         </div>
         
         <div class="p-6">
-          <p class="text-center text-[10px] text-slate-500 font-bold uppercase mb-6 leading-relaxed px-4 line-clamp-2">${escHtml(s.description || 'Chưa có mô tả chi tiết cho môn tập này')}</p>
+          <p class="text-center text-xs text-slate-500 font-bold uppercase mb-6 leading-relaxed px-4 line-clamp-2">${escHtml(s.description || 'Chưa có mô tả chi tiết cho môn tập này')}</p>
           
           <div class="space-y-4 mb-6">
-            <div class="flex items-center justify-between text-[10px] font-bold uppercase">
+            <div class="flex items-center justify-between text-xs font-bold uppercase">
               <span class="text-slate-500 flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Sân bãi</span>
-              <span class="text-white">0 sân</span>
+              <span class="text-white">${s.facilityCount || 0} sân</span>
             </div>
-            <div class="flex items-center justify-between text-[10px] font-bold uppercase">
+            <div class="flex items-center justify-between text-xs font-bold uppercase">
               <span class="text-slate-500 flex items-center gap-2"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Lớp học</span>
-              <span class="text-white">0 lớp</span>
+              <span class="text-white">${s.classCount || 0} lớp</span>
             </div>
           </div>
 
           <div class="flex justify-center mb-6">
-            <div class="px-3 py-1.5 bg-green-500/10 text-green-500 text-[9px] font-black uppercase rounded-full flex items-center gap-2">
+            <div class="px-3 py-1.5 bg-green-500/10 text-green-500 text-xs font-bold uppercase rounded-full flex items-center gap-2">
               <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div> Đang hoạt động
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2 mb-2">
-            <button onclick='editSport(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2">
+            <button onclick='editSport(${JSON.stringify(s).replace(/'/g,"&#39;")})' class="py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2 admin-only">
               <i data-lucide="edit-3" class="w-3 h-3"></i> Sửa
             </button>
-            <button onclick="deleteItem('sports','${s.sport_id}',loadSports)" class="py-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2">
+            <button onclick="deleteItem('sports','${s.sport_id}',loadSports)" class="py-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2 admin-only">
               <i data-lucide="trash-2" class="w-3 h-3"></i> Xóa
             </button>
           </div>
-          <button onclick="navigate('classes')" class="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2">
+          <button onclick="navigate('classes')" class="w-full py-2.5 bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-2">
             <i data-lucide="eye" class="w-3 h-3"></i> Xem lớp
           </button>
         </div>
@@ -304,7 +397,7 @@ window.loadSports = async function(keyword = '') {
   } catch(e) { document.getElementById('sport-grid-wrap').innerHTML = `<div class="col-span-full p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
 }
 PAGE_RENDERERS['classes'] = async (c) => {
-  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-black text-white uppercase">Lớp học & Buổi tập</h2></div><button onclick="editClass()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Thêm lớp học</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="class-list-wrap"></div></div>`;
+  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-bold text-white uppercase">Lớp học & Buổi tập</h2></div><button onclick="editClass()" class="btn-primary flex items-center gap-2 admin-only"><i data-lucide="plus" class="w-4 h-4"></i> Thêm lớp học</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="class-list-wrap"></div></div>`;
   lucide.createIcons({ nodes:[c] });
   loadClasses();
 };
@@ -313,26 +406,27 @@ window.loadClasses = async function() {
   const data = res.data || [];
   document.getElementById('class-list-wrap').innerHTML = data.map(cl=>`<div class="bg-darkcard rounded-3xl border border-darkborder p-6 group relative">
     <h4 class="text-white font-bold uppercase mb-1 text-sm pr-6">${escHtml(cl.name)}</h4>
-    <div class="text-[10px] text-slate-500 font-bold uppercase mb-4">${cl.enrolledCount||0}/${cl.capacity} học viên</div>
+    <div class="text-xs text-slate-500 font-bold uppercase mb-4">${cl.enrolledCount||0}/${cl.capacity} học viên</div>
     <div class="space-y-2 mb-6 text-xs text-slate-500 font-medium">
       <div class="flex items-center gap-2"><i data-lucide="calendar" class="w-3.5 h-3.5 text-primary-500"></i> ${escHtml(cl.dayOfWeek)}</div>
       <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-primary-500"></i> ${cl.time}</div>
       <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-primary-500"></i> ${escHtml(cl.facilityName || 'Chưa định danh')}</div>
+      <div class="flex items-center gap-2"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-orange-400"></i> ${cl.startDate ? fmtDate(cl.startDate) : '---'} - ${cl.endDate ? fmtDate(cl.endDate) : '---'}</div>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-darkborder mb-3">
-      <div class="text-base font-black text-white">${fmtCurrency(cl.price)}</div>
+      <div class="text-base font-bold text-white">${fmtCurrency(cl.price)}</div>
       ${statusBadge(cl.status)}
     </div>
     <div class="grid grid-cols-3 gap-2">
-      <button onclick='editClass(${JSON.stringify(cl).replace(/'/g,"&#39;")})' class="py-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
-      <button onclick='manageEnrollment(${JSON.stringify(cl).replace(/'/g,"&#39;")})' class="py-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1"><i data-lucide="users" class="w-3 h-3"></i>HV</button>
-      <button onclick="deleteItem('classes','${cl.id}',loadClasses)" class="py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
+      <button onclick='editClass(${JSON.stringify(cl).replace(/'/g,"&#39;")})' class="py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1 admin-only"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
+      <button onclick='manageEnrollment(${JSON.stringify(cl).replace(/'/g,"&#39;")})' class="py-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1"><i data-lucide="users" class="w-3 h-3"></i>HV</button>
+      <button onclick="deleteItem('classes','${cl.id}',loadClasses)" class="py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-1 admin-only"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
     </div>
   </div>`).join('') + (data.length===0?'<div class="col-span-3 p-20 text-center text-slate-500">Chưa có dữ liệu.</div>':'');
   lucide.createIcons({ nodes:[document.getElementById('class-list-wrap')] });
 }
 PAGE_RENDERERS['facilities'] = async (c) => {
-  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-black text-white uppercase">Cơ sở vật chất</h2></div><button onclick="editFacility()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Thêm khu vực</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="fac-list-wrap"></div></div>`;
+  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-bold text-white uppercase">Cơ sở vật chất</h2></div><button onclick="editFacility()" class="btn-primary flex items-center gap-2 admin-only"><i data-lucide="plus" class="w-4 h-4"></i> Thêm khu vực</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="fac-list-wrap"></div></div>`;
   lucide.createIcons({ nodes:[c] });
   loadFacilities();
 };
@@ -343,17 +437,18 @@ window.loadFacilities = async function() {
     <div class="w-16 h-16 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="map-pin" class="w-8 h-8"></i></div>
     <div class="flex-1">
       <h4 class="text-white font-bold uppercase mb-1 text-sm">${escHtml(f.facility_name)}</h4>
-      <p class="text-slate-500 text-xs mb-3 font-medium">${escHtml(f.location || 'Chưa có vị trí')}</p>
+      <p class="text-slate-500 text-xs mb-1 font-medium">${escHtml(f.location || 'Chưa có vị trí')}</p>
+      <div class="text-xs text-primary-400 font-bold mb-3 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> Môn: ${f.sport_name ? escHtml(f.sport_name) : 'Đa năng'}</div>
       <div class="flex gap-2">
-        <button onclick='editFacility(${JSON.stringify(f).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
-        <button onclick="deleteItem('facilities','${f.facility_id}',loadFacilities)" class="py-1.5 px-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
+        <button onclick='editFacility(${JSON.stringify(f).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1 admin-only"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
+        <button onclick="deleteItem('facilities','${f.facility_id}',loadFacilities)" class="py-1.5 px-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1 admin-only"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
       </div>
     </div>
   </div>`).join('') + (data.length===0?'<div class="col-span-2 p-20 text-center text-slate-500">Chưa có dữ liệu.</div>':'');
   lucide.createIcons({ nodes:[document.getElementById('fac-list-wrap')] });
 }
 PAGE_RENDERERS['events'] = async (c) => {
-  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-black text-white uppercase">Sự kiện & Giải đấu</h2></div><button onclick="editEvent()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Tạo sự kiện</button></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="event-list-wrap"></div></div>`;
+  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-bold text-white uppercase">Sự kiện & Giải đấu</h2></div><button onclick="editEvent()" class="btn-primary flex items-center gap-2 admin-only"><i data-lucide="plus" class="w-4 h-4"></i> Tạo sự kiện</button></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="event-list-wrap"></div></div>`;
   lucide.createIcons({ nodes:[c] });
   loadEvents();
 };
@@ -362,24 +457,24 @@ window.loadEvents = async function() {
   const data = res.data || [];
   document.getElementById('event-list-wrap').innerHTML = data.map(e=>`<div class="bg-darkcard rounded-3xl border border-darkborder p-6 flex gap-6 group">
     <div class="w-16 h-16 bg-slate-900 rounded-xl flex flex-col items-center justify-center shrink-0 border border-darkborder shadow-inner">
-      <div class="text-xl font-black text-primary-500">${new Date(e.ngay).getDate()}</div>
-      <div class="text-[8px] font-bold text-slate-500 uppercase">Th${new Date(e.ngay).getMonth()+1}</div>
+      <div class="text-xl font-bold text-primary-500">${new Date(e.ngay).getDate()}</div>
+      <div class="text-xs font-bold text-slate-500 uppercase">Th${new Date(e.ngay).getMonth()+1}</div>
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-start justify-between gap-2 mb-1">
         <h4 class="text-sm font-bold text-white uppercase leading-tight">${escHtml(e.ten)}</h4>
         ${statusBadge(e.trang_thai||'UPCOMING')}
       </div>
-      <p class="text-slate-500 text-[10px] mb-2 leading-relaxed line-clamp-2">${escHtml(e.mo_ta)}</p>
-      <div class="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase mb-3">
+      <p class="text-slate-500 text-xs mb-2 leading-relaxed line-clamp-2">${escHtml(e.mo_ta)}</p>
+      <div class="flex items-center gap-3 text-xs text-slate-400 font-bold uppercase mb-3">
         <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-blue-500"></i>${escHtml(e.dia_diem)}</span>
         <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-green-500"></i>${e.gio} - ${e.gio_ket_thuc}</span>
         ${e.gia>0?`<span class="text-primary-500">${fmtCurrency(e.gia)}</span>`:''}
       </div>
       <div class="flex gap-2">
-        <button onclick='editEvent(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
-        <button onclick='manageEventParticipants(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white text-[10px] font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i>Tham gia</button>
-        <button onclick="deleteItem('events','${e.id}',loadEvents)" class="py-1.5 px-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
+        <button onclick='editEvent(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1 admin-only"><i data-lucide="edit-3" class="w-3 h-3"></i>Sửa</button>
+        <button onclick='manageEventParticipants(${JSON.stringify(e).replace(/'/g,"&#39;")})' class="py-1.5 px-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i>Tham gia</button>
+        <button onclick="deleteItem('events','${e.id}',loadEvents)" class="py-1.5 px-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-xs font-bold uppercase rounded-lg transition-all flex items-center gap-1 admin-only"><i data-lucide="trash-2" class="w-3 h-3"></i>Xóa</button>
       </div>
     </div>
   </div>`).join('') + (data.length===0?'<div class="col-span-2 p-20 text-center text-slate-500">Chưa có dữ liệu.</div>':'');
@@ -392,16 +487,45 @@ window.manageEventParticipants = async function(ev) {
   const allMembers = mr.data||[];
   const participants = pr.data||[];
   const participantIds = new Set(participants.map(p=>String(p.memberId)));
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-1">${escHtml(ev.ten)}</h3>
-    <p class="text-slate-500 text-xs mb-6">${participants.length}/${ev.suc_chua} người tham gia</p>
-    <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar mb-6">${allMembers.map(m=>`
-      <div class="flex items-center justify-between p-3 rounded-xl ${participantIds.has(String(m.id))?'bg-primary-500/10 border border-primary-500/20':'bg-slate-900/50 border border-slate-800'}">
+
+  allMembers.sort((a,b) => {
+    const aIn = participantIds.has(String(a.id));
+    const bIn = participantIds.has(String(b.id));
+    if(aIn && !bIn) return -1;
+    if(!aIn && bIn) return 1;
+    return (a.fullName||'').localeCompare(b.fullName||'');
+  });
+
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-1">${escHtml(ev.ten)}</h3>
+    <p class="text-slate-500 text-xs mb-4">${participants.length}/${ev.suc_chua} người tham gia</p>
+    <div class="relative mb-4">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" class="form-input pl-11 focus:ring-primary-500 focus:border-primary-500" placeholder="Tìm tên hoặc SĐT..." onkeyup="filterModalMembers('event-list', this.value)">
+    </div>
+    <div id="event-list" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar mb-6">${allMembers.map(m=>`
+      <div class="modal-member-item flex items-center justify-between p-3 rounded-xl ${participantIds.has(String(m.id))?'bg-primary-500/10 border border-primary-500/20':'bg-slate-900/50 border border-slate-800'}" data-search="${escHtml(m.fullName+' '+m.phone).toLowerCase()}">
         <div><span class="text-sm font-bold text-white">${escHtml(m.fullName)}</span><div class="text-xs text-slate-500">${escHtml(m.phone)}</div></div>
         ${participantIds.has(String(m.id))
           ? `<button onclick="removeEventParticipant('${ev.id}','${m.id}')" class="text-xs px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Xóa</button>`
           : `<button onclick="addEventParticipant('${ev.id}','${m.id}')" class="text-xs px-3 py-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500 hover:text-white transition-all">Thêm</button>`}
       </div>`).join('')}
     </div><div class="flex justify-end"><button onclick="closeModal()" class="btn-gray">Đóng</button></div></div>`);
+    lucide.createIcons();
+}
+
+window.filterModalMembers = function(containerId, keyword) {
+  const k = (keyword || '').toLowerCase();
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const items = container.querySelectorAll('.modal-member-item');
+  items.forEach(item => {
+    const text = item.getAttribute('data-search') || '';
+    if(text.includes(k)) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
 }
 window.addEventParticipant = async function(eventId, memberId) {
   const res = await API.post(`/api/events/${eventId}/participants`, { memberId });
@@ -412,30 +536,64 @@ window.removeEventParticipant = async function(eventId, memberId) {
   if (res.success) { showToast('Đã xóa!', 'success'); manageEventParticipants(window._lastEventManage); } else showToast(res.error, 'error');
 }
 
-PAGE_RENDERERS['billing'] = async (c) => {
+window.loadBillingFilter = () => {
+  const m = document.getElementById('bill-m').value;
+  const y = document.getElementById('bill-y').value;
+  if (!m || !y) return showToast('Vui lòng chọn tháng và năm', 'error');
+  PAGE_RENDERERS['billing'](document.getElementById('app-content'), {month: `${y}-${m}`});
+};
+window.clearBillingFilter = () => {
+  PAGE_RENDERERS['billing'](document.getElementById('app-content'));
+};
+window.loadReportsFilter = () => {
+  const m = document.getElementById('rep-m').value;
+  const y = document.getElementById('rep-y').value;
+  if (!m || !y) return showToast('Vui lòng chọn tháng và năm', 'error');
+  PAGE_RENDERERS['reports'](document.getElementById('app-content'), {month: `${y}-${m}`});
+};
+window.clearReportsFilter = () => {
+  PAGE_RENDERERS['reports'](document.getElementById('app-content'));
+};
+
+PAGE_RENDERERS['billing'] = async (c, args={}) => {
   try {
-    const res = await API.get('/api/billing');
+    const qs = args.month ? `?month=${args.month}` : '';
+    const res = await API.get('/api/billing' + qs);
     const data = res.data || [];
     const totalPaid = data.reduce((s, h) => s + parseFloat(h.paidAmount || 0), 0);
     const totalRemaining = data.filter(h => h.paymentStatus !== 'CANCELLED').reduce((s, h) => s + parseFloat(h.remainingAmount || 0), 0);
 
     c.innerHTML = `<div class="page-enter">
       <div class="flex items-center justify-between mb-8">
-        <h2 class="text-2xl font-black text-white uppercase">Tài chính & Hóa đơn</h2>
-        <button onclick="addInvoice()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Tạo hóa đơn</button>
+        <h2 class="text-2xl font-bold text-white uppercase">Tài chính & Hóa đơn</h2>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
+            <select id="bill-m" class="form-input text-xs w-24 bg-transparent border-0 py-1 text-slate-300">
+              <option value="">Tháng</option>
+              ${[...Array(12)].map((_, i) => `<option value="${String(i+1).padStart(2,'0')}" ${(args.month && args.month.split('-')[1] == String(i+1).padStart(2,'0')) ? 'selected' : ''}>Tháng ${i+1}</option>`).join('')}
+            </select>
+            <select id="bill-y" class="form-input text-xs w-24 bg-transparent border-0 py-1 text-slate-300">
+              <option value="">Năm</option>
+              ${[2024, 2025, 2026, 2027].map(y => `<option value="${y}" ${(args.month && args.month.split('-')[0] == String(y)) ? 'selected' : ''}>${y}</option>`).join('')}
+            </select>
+            <button onclick="window.loadBillingFilter()" class="bg-primary-500 hover:bg-primary-600 text-white rounded px-3 py-1 text-xs transition-colors">Lọc</button>
+            <button onclick="window.clearBillingFilter()" class="bg-slate-700 hover:bg-slate-600 text-white rounded px-2 py-1 text-xs transition-colors" title="Xóa lọc"><i data-lucide="x" class="w-3 h-3"></i></button>
+          </div>
+          <button onclick="addInvoice()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Tạo hóa đơn</button>
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1 text-center">Tổng đã thu</div>
-          <div class="text-2xl font-black text-green-400 text-center">${fmtCurrency(totalPaid)}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1 text-center">Tổng đã thu</div>
+          <div class="text-2xl font-bold text-green-400 text-center">${fmtCurrency(totalPaid)}</div>
         </div>
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1 text-center">Còn nợ</div>
-          <div class="text-2xl font-black text-red-400 text-center">${fmtCurrency(totalRemaining)}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1 text-center">Còn nợ</div>
+          <div class="text-2xl font-bold text-red-400 text-center">${fmtCurrency(totalRemaining)}</div>
         </div>
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1 text-center">Số hóa đơn</div>
-          <div class="text-2xl font-black text-white text-center">${data.length}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1 text-center">Số hóa đơn</div>
+          <div class="text-2xl font-bold text-white text-center">${data.length}</div>
         </div>
       </div>
       <div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden">
@@ -449,7 +607,7 @@ PAGE_RENDERERS['billing'] = async (c) => {
             <tbody>${data.map(h => `<tr>
               <td class="font-mono text-primary-500 font-bold">#${h.id}</td>
               <td class="text-white font-bold">${escHtml(h.memberName || '---')}</td>
-              <td><span class="text-[10px] font-black px-2 py-1 rounded bg-slate-800 text-slate-400">${h.sourceType}</span></td>
+              <td><span class="text-xs font-bold px-2 py-1 rounded bg-slate-800 text-slate-400">${{'PLAN':'Gói tập','CLASS':'Lớp học','EVENT':'Sự kiện','MANUAL':'Khác'}[h.sourceType] || h.sourceType}</span></td>
               <td class="text-slate-500 text-sm">${fmtDate(h.date)}</td>
               <td class="font-bold text-white">${fmtCurrency(h.finalAmount)}</td>
               <td class="text-green-400 text-sm">${fmtCurrency(h.paidAmount)}</td>
@@ -460,7 +618,7 @@ PAGE_RENDERERS['billing'] = async (c) => {
                   ${h.paymentStatus !== 'PAID' && h.paymentStatus !== 'CANCELLED' ? `
                     <button onclick="payInvoiceModal('${h.id}', ${h.remainingAmount})" class="text-xs px-2 py-1 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-all font-bold">Thanh toán</button>
                   ` : ''}
-                  <button onclick="deleteItem('billing','${h.id}',()=>navigate('billing'))" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                  <button onclick="deleteItem('billing','${h.id}',()=>navigate('billing'))" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg admin-only"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 </div>
               </td>
             </tr>`).join('')}</tbody>
@@ -475,7 +633,7 @@ PAGE_RENDERERS['billing'] = async (c) => {
 
 window.payInvoiceModal = function(id, remaining) {
   openModal(`<div class="p-8">
-    <h3 class="text-xl font-black text-white uppercase mb-6">Thanh toán hóa đơn #${id}</h3>
+    <h3 class="text-xl font-bold text-white uppercase mb-6">Thanh toán hóa đơn #${id}</h3>
     <div class="space-y-4 mb-8">
       <div class="space-y-2">
         <label class="lbl">Số tiền thanh toán (Còn nợ: ${fmtCurrency(remaining)})</label>
@@ -517,29 +675,44 @@ window.doPayInvoice = async function(id) {
   }
 };
 
-PAGE_RENDERERS['reports'] = async (c) => {
+PAGE_RENDERERS['reports'] = async (c, args={}) => {
   try {
-    const res = await API.get('/api/reports');
+    const qs = args.month ? `?month=${args.month}` : '';
+    const res = await API.get('/api/reports' + qs);
     if (!res.success) throw new Error(res.error);
     const d = res.data;
     c.innerHTML = `<div class="page-enter">
-      <h2 class="text-2xl font-black text-white uppercase mb-8">Báo cáo & Thống kê</h2>
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-2xl font-bold text-white uppercase">Báo cáo & Thống kê</h2>
+        <div class="flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
+            <select id="rep-m" class="form-input text-xs w-24 bg-transparent border-0 py-1 text-slate-300">
+              <option value="">Tháng</option>
+              ${[...Array(12)].map((_, i) => `<option value="${String(i+1).padStart(2,'0')}" ${(args.month && args.month.split('-')[1] == String(i+1).padStart(2,'0')) ? 'selected' : ''}>Tháng ${i+1}</option>`).join('')}
+            </select>
+            <select id="rep-y" class="form-input text-xs w-24 bg-transparent border-0 py-1 text-slate-300">
+              <option value="">Năm</option>
+              ${[2024, 2025, 2026, 2027].map(y => `<option value="${y}" ${(args.month && args.month.split('-')[0] == String(y)) ? 'selected' : ''}>${y}</option>`).join('')}
+            </select>
+          <button onclick="window.loadReportsFilter()" class="bg-primary-500 hover:bg-primary-600 text-white rounded px-3 py-1 text-xs transition-colors">Lọc</button>
+          <button onclick="window.clearReportsFilter()" class="bg-slate-700 hover:bg-slate-600 text-white rounded px-2 py-1 text-xs transition-colors" title="Xóa lọc"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>
+      </div>
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Doanh thu tháng này</div>
-          <div class="text-2xl font-black text-green-400">${fmtCurrency(d.doanh_thu_thang)}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1">Doanh thu tháng này</div>
+          <div class="text-2xl font-bold text-green-400">${fmtCurrency(d.doanh_thu_thang)}</div>
         </div>
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Tổng doanh thu</div>
-          <div class="text-2xl font-black text-white">${fmtCurrency(d.tong_doanh_thu||0)}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1">Tổng doanh thu</div>
+          <div class="text-2xl font-bold text-white">${fmtCurrency(d.tong_doanh_thu||0)}</div>
         </div>
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Hội viên mới</div>
-          <div class="text-2xl font-black text-blue-400">${d.hoi_vien_moi}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1">Hội viên mới</div>
+          <div class="text-2xl font-bold text-blue-400">${d.hoi_vien_moi}</div>
         </div>
         <div class="bg-darkcard p-6 rounded-2xl border border-darkborder">
-          <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Lớp đang hoạt động</div>
-          <div class="text-2xl font-black text-orange-400">${d.lop_hoat_dong||0}</div>
+          <div class="text-xs text-slate-500 font-bold uppercase mb-1">Lớp đang hoạt động</div>
+          <div class="text-2xl font-bold text-orange-400">${d.lop_hoat_dong||0}</div>
         </div>
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -565,9 +738,9 @@ PAGE_RENDERERS['reports'] = async (c) => {
           <h3 class="text-white font-bold mb-4 uppercase text-sm">Top hội viên đóng góp</h3>
           <div class="space-y-3">${(d.top_hv||[]).map((h,i)=>`
             <div class="flex items-center gap-3 p-3 bg-slate-900/50 rounded-xl">
-              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${i===0?'bg-yellow-500 text-black':i===1?'bg-slate-400 text-black':i===2?'bg-orange-600 text-white':'bg-slate-800 text-slate-400'}">${i+1}</div>
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i===0?'bg-yellow-500 text-black':i===1?'bg-slate-400 text-black':i===2?'bg-orange-600 text-white':'bg-slate-800 text-slate-400'}">${i+1}</div>
               <span class="flex-1 text-sm font-bold text-white truncate">${escHtml(h.name)}</span>
-              <span class="text-green-400 font-black text-sm">${fmtCurrency(h.total)}</span>
+              <span class="text-green-400 font-bold text-sm">${fmtCurrency(h.total)}</span>
             </div>`).join('')}</div>
         </div>
       </div>
@@ -579,18 +752,18 @@ PAGE_RENDERERS['reports'] = async (c) => {
   } catch(e) { c.innerHTML = `<div class="p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
 };
 PAGE_RENDERERS['system_users'] = async (c) => {
-  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-black text-white uppercase">Người dùng hệ thống</h2></div><button onclick="editUser()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Thêm User</button></div><div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden" id="user-table-wrap"></div></div>`;
+  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-bold text-white uppercase">Người dùng hệ thống</h2></div><button onclick="editUser()" class="btn-primary flex items-center gap-2 admin-only"><i data-lucide="plus" class="w-4 h-4"></i> Thêm User</button></div><div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden" id="user-table-wrap"></div></div>`;
   lucide.createIcons({ nodes:[c] });
   loadUsers();
 };
 window.loadUsers = async function() {
   const res = await API.get('/api/users');
   const data = res.data || [];
-  document.getElementById('user-table-wrap').innerHTML = `<table class="data-table"><thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>${data.map(u=>`<tr><td class="font-mono text-white">${escHtml(u.username)}</td><td class="font-bold">${escHtml(u.fullName)}</td><td>${statusBadge(u.role)}</td><td><button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' class="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg"><i data-lucide="edit-3" class="w-4 h-4"></i></button><button onclick="deleteItem('users','${u.id}',loadUsers)" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}</tbody></table>${data.length===0?'<div class="p-10 text-center text-slate-500">Chưa có dữ liệu.</div>':''}`;
+  document.getElementById('user-table-wrap').innerHTML = `<table class="data-table"><thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Thao tác</th></tr></thead><tbody>${data.map(u=>`<tr><td class="font-mono text-white">${escHtml(u.username)}</td><td class="font-bold">${escHtml(u.fullName)}</td><td>${statusBadge(u.role)}</td><td><button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' class="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg admin-only"><i data-lucide="edit-3" class="w-4 h-4"></i></button><button onclick="deleteItem('users','${u.id}',loadUsers)" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg admin-only"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}</tbody></table>${data.length===0?'<div class="p-10 text-center text-slate-500">Chưa có dữ liệu.</div>':''}`;
   lucide.createIcons({ nodes: [document.getElementById('user-table-wrap')] });
 }
 window.editUser = function(u=null) {
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${u?'Sửa người dùng':'Thêm người dùng'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${u?'Sửa người dùng':'Thêm người dùng'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="col-span-2 space-y-2"><label class="lbl">Họ tên</label><input id="u-name" type="text" value="${escHtml(u?.fullName||'')}" class="form-input" placeholder="Nguyễn Văn A"></div>
     <div class="space-y-2"><label class="lbl">Vai trò</label><select id="u-role" class="form-input"><option value="PT" ${u?.role==='PT'?'selected':''}>HLV (PT)</option><option value="ADMIN" ${u?.role==='ADMIN'?'selected':''}>Quản trị viên</option></select></div>
     <div class="space-y-2"><label class="lbl">Tên đăng nhập</label><input id="u-user" type="text" value="${escHtml(u?.username||'')}" class="form-input" ${u?'readonly':''}></div>
@@ -605,7 +778,7 @@ window.saveUser = async function(id) {
 
 /* ─── SPORT edit/save ──────────────────────────────────────────────────────── */
 window.editSport = function(s=null) {
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${s?'Sửa môn tập':'Thêm môn tập'}</h3><div class="space-y-4 mb-8">
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${s?'Sửa môn tập':'Thêm môn tập'}</h3><div class="space-y-4 mb-8">
     <div class="space-y-2"><label class="lbl">Tên môn</label><input id="sp-name" type="text" value="${escHtml(s?.sport_name||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Mô tả</label><textarea id="sp-desc" class="form-input h-24 resize-none">${escHtml(s?.description||'')}</textarea></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveSport('${s?.sport_id||''}')" class="btn-primary">Lưu lại</button></div></div>`);
@@ -617,14 +790,17 @@ window.saveSport = async function(id) {
 }
 
 /* ─── FACILITY edit/save ───────────────────────────────────────────────────── */
-window.editFacility = function(f=null) {
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${f?'Sửa sân bãi':'Thêm khu vực'}</h3><div class="space-y-4 mb-8">
+window.editFacility = async function(f=null) {
+  const sp = await API.get('/api/sports');
+  const sports = sp.data||[];
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${f?'Sửa sân bãi':'Thêm khu vực'}</h3><div class="space-y-4 mb-8">
     <div class="space-y-2"><label class="lbl">Tên sân / Phòng</label><input id="fac-name" type="text" value="${escHtml(f?.facility_name||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Vị trí / Tầng</label><input id="fac-loc" type="text" value="${escHtml(f?.location||'')}" class="form-input"></div>
+    <div class="space-y-2"><label class="lbl">Môn thể thao</label><select id="fac-sport" class="form-input"><option value="">(Sân đa năng / Không chọn)</option>${sports.map(s=>`<option value="${s.sport_id}" ${f?.sport_id==s.sport_id?'selected':''}>${escHtml(s.sport_name)}</option>`).join('')}</select></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveFacility('${f?.facility_id||''}')" class="btn-primary">Lưu lại</button></div></div>`);
 }
 window.saveFacility = async function(id) {
-  const body = { name: document.getElementById('fac-name').value, location: document.getElementById('fac-loc').value };
+  const body = { name: document.getElementById('fac-name').value, location: document.getElementById('fac-loc').value, sport_id: document.getElementById('fac-sport').value || null };
   const res = id ? await API.put(`/api/facilities/${id}`, body) : await API.post('/api/facilities', body);
   if (res.success) { showToast('Đã lưu!', 'success'); closeModal(); loadFacilities(); } else showToast(res.error, 'error');
 }
@@ -633,20 +809,51 @@ window.saveFacility = async function(id) {
 window.editClass = async function(cl=null) {
   const [tr, sp, fa] = await Promise.all([API.get('/api/trainers'), API.get('/api/sports'), API.get('/api/facilities')]);
   const trainers = tr.data||[], sports = sp.data||[], facs = fa.data||[];
+  window.currentFacs = facs;
   const days = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật','Hằng ngày'];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${cl?'Sửa lớp học':'Thêm lớp học'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  
+  const initSportId = cl?.sportId || (sports.length > 0 ? sports[0].sport_id : null);
+  const initFacs = initSportId ? facs.filter(f => f.sport_id === initSportId) : facs;
+  
+  window.filterFacs = function() {
+    const sId = document.getElementById('cl-sport').value;
+    const filtered = sId ? window.currentFacs.filter(f => f.sport_id === sId) : window.currentFacs;
+    document.getElementById('cl-fac').innerHTML = filtered.map(f=>`<option value="${f.facility_id}">${escHtml(f.facility_name)}</option>`).join('');
+  };
+
+  const selDays = cl?.dayOfWeek ? cl.dayOfWeek.split(',').map(s=>s.trim()) : [];
+  const daysHtml = days.map(d => `<label class="inline-flex items-center mr-4 mb-2 cursor-pointer"><input type="checkbox" name="cl-days-cb" value="${d}" ${selDays.includes(d)?'checked':''} class="form-checkbox bg-slate-900 border-slate-700 text-primary-500 rounded w-4 h-4"><span class="ml-2 text-sm text-slate-300">${d}</span></label>`).join('');
+
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${cl?'Sửa lớp học':'Thêm lớp học'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="col-span-2 space-y-2"><label class="lbl">Tên lớp</label><input id="cl-name" type="text" value="${escHtml(cl?.name||'')}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Huấn luyện viên</label><select id="cl-trainer" class="form-input">${trainers.map(t=>`<option value="${t.id}" ${cl?.trainerId==t.id?'selected':''}>${escHtml(t.fullName)}</option>`).join('')}</select></div>
-    <div class="space-y-2"><label class="lbl">Môn thể thao</label><select id="cl-sport" class="form-input">${sports.map(s=>`<option value="${s.sport_id}" ${cl?.sportId==s.sport_id?'selected':''}>${escHtml(s.sport_name)}</option>`).join('')}</select></div>
-    <div class="space-y-2"><label class="lbl">Sân bãi</label><select id="cl-fac" class="form-input">${facs.map(f=>`<option value="${f.facility_id}" ${cl?.facilityId==f.facility_id?'selected':''}>${escHtml(f.facility_name)}</option>`).join('')}</select></div>
-    <div class="space-y-2"><label class="lbl">Buổi trong tuần</label><select id="cl-day" class="form-input">${days.map(d=>`<option value="${d}" ${cl?.dayOfWeek==d?'selected':''}>${d}</option>`).join('')}</select></div>
-    <div class="space-y-2"><label class="lbl">Giờ (VD: 08:00 - 09:30)</label><input id="cl-time" type="text" value="${cl?.time||'08:00 - 09:30'}" class="form-input"></div>
+    <div class="space-y-2"><label class="lbl">Môn thể thao</label><select id="cl-sport" onchange="filterFacs()" class="form-input">${sports.map(s=>`<option value="${s.sport_id}" ${cl?.sportId==s.sport_id?'selected':''}>${escHtml(s.sport_name)}</option>`).join('')}</select></div>
+    <div class="space-y-2"><label class="lbl">Sân bãi</label><select id="cl-fac" class="form-input">${initFacs.map(f=>`<option value="${f.facility_id}" ${cl?.facilityId==f.facility_id?'selected':''}>${escHtml(f.facility_name)}</option>`).join('')}</select></div>
     <div class="space-y-2"><label class="lbl">Sức chứa</label><input id="cl-cap" type="number" value="${cl?.capacity||20}" class="form-input"></div>
+    <div class="space-y-2"><label class="lbl">Ngày bắt đầu</label><input id="cl-start" type="date" value="${cl?.startDate||''}" class="form-input"></div>
+    <div class="space-y-2"><label class="lbl">Ngày kết thúc</label><input id="cl-end" type="date" value="${cl?.endDate||''}" class="form-input"></div>
+    <div class="col-span-2 space-y-2"><label class="lbl">Buổi trong tuần</label><div class="flex flex-wrap pt-2">${daysHtml}</div></div>
+    <div class="space-y-2"><label class="lbl">Giờ (VD: 08:00 - 09:30)</label><input id="cl-time" type="text" value="${cl?.time||'08:00 - 09:30'}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Học phí (VND)</label><input id="cl-price" type="number" value="${cl?.price||0}" class="form-input"></div>
+    <div class="col-span-2 space-y-2"><label class="lbl">Trạng thái</label><select id="cl-status" class="form-input"><option value="ACTIVE" ${cl?.status==='ACTIVE'?'selected':''}>Hoạt động</option><option value="INACTIVE" ${cl?.status==='INACTIVE'?'selected':''}>Tạm dừng</option></select></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveClass('${cl?.id||''}')" class="btn-primary">Lưu lại</button></div></div>`);
 }
 window.saveClass = async function(id) {
-  const body = { name: document.getElementById('cl-name').value, trainerId: document.getElementById('cl-trainer').value, sportId: document.getElementById('cl-sport').value, facilityId: document.getElementById('cl-fac').value, dayOfWeek: document.getElementById('cl-day').value, time: document.getElementById('cl-time').value, capacity: document.getElementById('cl-cap').value, price: document.getElementById('cl-price').value };
+  const selectedDays = Array.from(document.querySelectorAll('input[name="cl-days-cb"]:checked')).map(cb => cb.value).join(',');
+  const body = { 
+    name: document.getElementById('cl-name').value, 
+    trainerId: document.getElementById('cl-trainer').value, 
+    sportId: document.getElementById('cl-sport').value, 
+    facilityId: document.getElementById('cl-fac').value, 
+    dayOfWeek: selectedDays, 
+    time: document.getElementById('cl-time').value, 
+    capacity: document.getElementById('cl-cap').value, 
+    price: document.getElementById('cl-price').value,
+    status: document.getElementById('cl-status').value,
+    startDate: document.getElementById('cl-start').value,
+    endDate: document.getElementById('cl-end').value
+  };
+  if (!body.startDate || !body.endDate) return showToast('Vui lòng chọn Ngày bắt đầu và Ngày kết thúc', 'error');
   const res = id ? await API.put(`/api/classes/${id}`, body) : await API.post('/api/classes', body);
   if (res.success) { showToast('Đã lưu!', 'success'); closeModal(); loadClasses(); } else showToast(res.error, 'error');
 }
@@ -655,8 +862,8 @@ window.saveClass = async function(id) {
 window.editEvent = async function(ev=null) {
   const fa = await API.get('/api/facilities');
   const facs = fa.data||[];
-  const statuses = ['UPCOMING','ONGOING','COMPLETED','CANCELLED'];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${ev?'Sửa sự kiện':'Tạo sự kiện'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  const statuses = [{v:'UPCOMING',l:'Sắp tới'},{v:'ONGOING',l:'Đang diễn ra'},{v:'COMPLETED',l:'Hoàn thành'},{v:'CANCELLED',l:'Đã hủy'}];
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${ev?'Sửa sự kiện':'Tạo sự kiện'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="col-span-2 space-y-2"><label class="lbl">Tên sự kiện</label><input id="ev-name" type="text" value="${escHtml(ev?.ten||'')}" class="form-input"></div>
     <div class="col-span-2 space-y-2"><label class="lbl">Mô tả</label><textarea id="ev-desc" class="form-input h-20 resize-none">${escHtml(ev?.mo_ta||'')}</textarea></div>
     <div class="space-y-2"><label class="lbl">Ngày tổ chức</label><input id="ev-date" type="date" value="${ev?.ngay||''}" class="form-input"></div>
@@ -666,7 +873,7 @@ window.editEvent = async function(ev=null) {
     <div class="space-y-2"><label class="lbl">Sân bãi</label><select id="ev-fac" class="form-input"><option value="">-- Không chọn --</option>${facs.map(f=>`<option value="${f.facility_id}" ${ev?.facility_id==f.facility_id?'selected':''}>${escHtml(f.facility_name)}</option>`).join('')}</select></div>
     <div class="space-y-2"><label class="lbl">Sức chứa</label><input id="ev-cap" type="number" value="${ev?.suc_chua||50}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Phí tham gia (VND)</label><input id="ev-price" type="number" value="${ev?.gia||0}" class="form-input"></div>
-    <div class="space-y-2"><label class="lbl">Trạng thái</label><select id="ev-status" class="form-input">${statuses.map(s=>`<option value="${s}" ${(ev?.trang_thai||'UPCOMING')==s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="space-y-2"><label class="lbl">Trạng thái</label><select id="ev-status" class="form-input">${statuses.map(s=>`<option value="${s.v}" ${(ev?.trang_thai||'UPCOMING')==s.v?'selected':''}>${s.l}</option>`).join('')}</select></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveEvent('${ev?.id||''}')" class="btn-primary">Lưu lại</button></div></div>`);
 }
 window.saveEvent = async function(id) {
@@ -677,19 +884,105 @@ window.saveEvent = async function(id) {
 
 /* ─── BILLING add invoice ──────────────────────────────────────────────────── */
 window.addInvoice = async function() {
-  const mr = await API.get('/api/members');
+  const [mr, cl, pl, ev] = await Promise.all([
+    API.get('/api/members'),
+    API.get('/api/classes'),
+    API.get('/api/plans'),
+    API.get('/api/events')
+  ]);
   const members = mr.data||[];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">Tạo hóa đơn</h3><div class="grid grid-cols-2 gap-4 mb-8">
-    <div class="col-span-2 space-y-2"><label class="lbl">Hội viên</label><select id="inv-member" class="form-input"><option value="">-- Chọn hội viên --</option>${members.map(m=>`<option value="${m.id}">${escHtml(m.fullName)}</option>`).join('')}</select></div>
-    <div class="space-y-2"><label class="lbl">Số tiền (VND)</label><input id="inv-amount" type="number" class="form-input" placeholder="500000"></div>
-    <div class="space-y-2"><label class="lbl">Phương thức</label><select id="inv-method" class="form-input"><option value="Cash">Tiền mặt</option><option value="Transfer">Chuyển khoản</option><option value="Card">Thẻ</option></select></div>
+  
+  // Save to global for use in updateInvoiceSource
+  window._invData = {
+    classes: cl.data||[],
+    plans: pl.data||[],
+    events: ev.data||[]
+  };
+
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Tạo hóa đơn</h3><div class="grid grid-cols-2 gap-4 mb-8">
+    <div class="col-span-2 space-y-2"><label class="lbl">Hội viên</label><select id="inv-member" class="form-input"><option value="">-- Chọn hội viên --</option>${members.map(m=>`<option value="${m.id}">${escHtml(m.fullName)} - ${escHtml(m.phone)}</option>`).join('')}</select></div>
+    
+    <div class="space-y-2"><label class="lbl">Loại dịch vụ</label>
+      <select id="inv-type" class="form-input" onchange="updateInvoiceSource()">
+        <option value="MANUAL">Tùy chỉnh (Khác)</option>
+        <option value="CLASS">Đăng ký Lớp học</option>
+        <option value="PLAN">Đăng ký Gói tập</option>
+        <option value="EVENT">Đăng ký Sự kiện</option>
+      </select>
+    </div>
+    <div class="space-y-2"><label class="lbl">Dịch vụ cụ thể</label>
+      <select id="inv-source" class="form-input" disabled onchange="updateInvoiceAmount()">
+        <option value="">-- Chọn --</option>
+      </select>
+    </div>
+    
+    <div class="space-y-2"><label class="lbl">Số tiền (VND)</label><input id="inv-amount" type="number" class="form-input" placeholder="Ví dụ: 500000"></div>
+    <div class="space-y-2"><label class="lbl">Phương thức</label><select id="inv-method" class="form-input"><option value="CASH">Tiền mặt</option><option value="TRANSFER">Chuyển khoản</option><option value="CARD">Thẻ</option></select></div>
+    
     <div class="space-y-2"><label class="lbl">Trạng thái</label><select id="inv-status" class="form-input"><option value="PAID">Đã thanh toán</option><option value="UNPAID">Chưa thanh toán</option></select></div>
+    <div class="space-y-2"><label class="lbl">Ghi chú</label><input id="inv-note" type="text" class="form-input" placeholder="Nhập ghi chú..."></div>
   </div><div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button><button onclick="saveInvoice()" class="btn-primary">Tạo hóa đơn</button></div></div>`);
 }
+
+window.updateInvoiceSource = function() {
+  const t = document.getElementById('inv-type').value;
+  const s = document.getElementById('inv-source');
+  const a = document.getElementById('inv-amount');
+  const n = document.getElementById('inv-note');
+  
+  s.innerHTML = '<option value="">-- Chọn dịch vụ --</option>';
+  if(t === 'MANUAL') { 
+    s.disabled = true; 
+    a.value = '';
+    n.value = '';
+    return; 
+  }
+  
+  s.disabled = false;
+  let list = [];
+  if(t === 'CLASS') list = window._invData.classes.map(c => ({ id: c.id, name: c.name, price: c.price }));
+  if(t === 'PLAN') list = window._invData.plans.map(p => ({ id: p.id, name: p.name, price: p.price }));
+  if(t === 'EVENT') list = window._invData.events.map(e => ({ id: e.id, name: e.ten, price: e.gia }));
+  
+  s.innerHTML += list.map(item => `<option value="${item.id}" data-price="${item.price||0}" data-name="${escHtml(item.name)}">${escHtml(item.name)} - ${fmtCurrency(item.price||0)}</option>`).join('');
+  updateInvoiceAmount();
+}
+
+window.updateInvoiceAmount = function() {
+  const t = document.getElementById('inv-type').value;
+  const s = document.getElementById('inv-source');
+  const a = document.getElementById('inv-amount');
+  const n = document.getElementById('inv-note');
+  
+  if (t === 'MANUAL') return;
+  const opt = s.options[s.selectedIndex];
+  if(opt && opt.value) {
+    a.value = opt.getAttribute('data-price') || 0;
+    const typeName = t === 'CLASS' ? 'Đăng ký lớp' : t === 'PLAN' ? 'Đăng ký gói' : 'Đăng ký sự kiện';
+    n.value = typeName + ': ' + (opt.getAttribute('data-name') || '');
+  } else {
+    a.value = '';
+    n.value = '';
+  }
+}
+
 window.saveInvoice = async function() {
   const memberId = document.getElementById('inv-member').value;
   if (!memberId) { showToast('Vui lòng chọn hội viên', 'error'); return; }
-  const body = { memberId, totalAmount: document.getElementById('inv-amount').value, paymentMethod: document.getElementById('inv-method').value, paymentStatus: document.getElementById('inv-status').value };
+  
+  const type = document.getElementById('inv-type').value;
+  const sourceId = document.getElementById('inv-source').value;
+  if (type !== 'MANUAL' && !sourceId) { showToast('Vui lòng chọn dịch vụ cụ thể', 'error'); return; }
+
+  const body = { 
+    memberId, 
+    sourceType: type,
+    sourceId: sourceId || null,
+    totalAmount: document.getElementById('inv-amount').value || 0, 
+    paymentMethod: document.getElementById('inv-method').value, 
+    paymentStatus: document.getElementById('inv-status').value,
+    note: document.getElementById('inv-note').value 
+  };
   const res = await API.post('/api/billing', body);
   if (res.success) { showToast('Đã tạo hóa đơn!', 'success'); closeModal(); navigate('billing'); } else showToast(res.error, 'error');
 }
@@ -701,16 +994,35 @@ window.manageEnrollment = async function(cl) {
   const allMembers = mr.data||[];
   const clData = (allCls.data||[]).find(c=>c.id===cl.id) || cl;
   const enrolled = clData.enrolledIds||[];
+  const enrollments = clData.enrollments||{};
   const enrolledSet = new Set(enrolled);
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-2">${escHtml(cl.name)}</h3><p class="text-slate-500 text-xs mb-6">${enrolled.length}/${cl.capacity} học viên</p>
-    <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar mb-6">${allMembers.map(m=>`
-      <div class="flex items-center justify-between p-3 rounded-xl ${enrolledSet.has(m.id)?'bg-primary-500/10 border border-primary-500/20':'bg-slate-900/50 border border-slate-800'}">
-        <div><span class="text-sm font-bold text-white">${escHtml(m.fullName)}</span><div class="text-xs text-slate-500">${escHtml(m.phone)}</div></div>
+
+  allMembers.sort((a,b) => {
+    const aIn = enrolledSet.has(a.id);
+    const bIn = enrolledSet.has(b.id);
+    if(aIn && !bIn) return -1;
+    if(!aIn && bIn) return 1;
+    return (a.fullName||'').localeCompare(b.fullName||'');
+  });
+
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-2">${escHtml(cl.name)}</h3><p class="text-slate-500 text-xs mb-4">${enrolled.length}/${cl.capacity} học viên</p>
+    <div class="relative mb-4">
+      <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" class="form-input pl-11 focus:ring-primary-500 focus:border-primary-500" placeholder="Tìm tên hoặc SĐT..." onkeyup="filterModalMembers('enroll-list', this.value)">
+    </div>
+    <div id="enroll-list" class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar mb-6">${allMembers.map(m=>`
+      <div class="modal-member-item flex items-center justify-between p-3 rounded-xl ${enrolledSet.has(m.id)?'bg-primary-500/10 border border-primary-500/20':'bg-slate-900/50 border border-slate-800'}" data-search="${escHtml(m.fullName+' '+m.phone).toLowerCase()}">
+        <div>
+          <span class="text-sm font-bold text-white">${escHtml(m.fullName)}</span>
+          ${enrolledSet.has(m.id) ? (enrollments[m.id] === 'PENDING' ? '<span class="ml-2 text-[10px] uppercase font-bold text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded">Chờ duyệt</span>' : '<span class="ml-2 text-[10px] uppercase font-bold text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded">Hoạt động</span>') : ''}
+          <div class="text-xs text-slate-500">${escHtml(m.phone)}</div>
+        </div>
         ${enrolledSet.has(m.id)
           ? `<button onclick="unenrollMember('${cl.id}','${m.id}')" class="text-xs px-3 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Xóa</button>`
           : `<button onclick="enrollMember('${cl.id}','${m.id}')" class="text-xs px-3 py-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500 hover:text-white transition-all">Thêm</button>`}
       </div>`).join('')}
     </div><div class="flex justify-end"><button onclick="closeModal()" class="btn-gray">Đóng</button></div></div>`);
+    lucide.createIcons();
 }
 window.enrollMember = async function(classId, memberId) {
   const res = await API.post(`/api/classes/${classId}/enroll`, { memberId });
@@ -723,7 +1035,7 @@ window.unenrollMember = async function(class_id, member_id) {
 
 /* ─── PLANS ─────────────────────────────────────────────────────────────────── */
 PAGE_RENDERERS['plans'] = async (c) => {
-  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-black text-white uppercase">Gói tập & Dịch vụ</h2></div><button onclick="editPlan()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Thêm gói tập</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plan-list-wrap"></div></div>`;
+  c.innerHTML = `<div class="page-enter"><div class="flex items-center justify-between mb-8"><div><h2 class="text-2xl font-bold text-white uppercase">Gói tập & Dịch vụ</h2></div><button onclick="editPlan()" class="btn-primary flex items-center gap-2 admin-only"><i data-lucide="plus" class="w-4 h-4"></i> Thêm gói tập</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plan-list-wrap"></div></div>`;
   lucide.createIcons({ nodes:[c] });
   loadPlans();
 };
@@ -732,27 +1044,27 @@ window.loadPlans = async function() {
   const data = res.data || [];
   document.getElementById('plan-list-wrap').innerHTML = data.map(p=>`<div class="bg-darkcard rounded-3xl border border-darkborder p-6 group relative">
     <h4 class="text-white font-bold uppercase mb-2 text-sm">${escHtml(p.name)}</h4>
-    <p class="text-slate-500 text-[10px] mb-4 leading-relaxed">${escHtml(p.description || 'Chưa có mô tả')}</p>
+    <p class="text-slate-500 text-xs mb-4 leading-relaxed">${escHtml(p.description || 'Chưa có mô tả')}</p>
     <div class="space-y-2 mb-6 text-xs text-slate-500 font-medium">
-      <div class="flex items-center gap-2"><i data-lucide="tag" class="w-3.5 h-3.5 text-primary-500"></i> Loai: ${p.type}</div>
+      <div class="flex items-center gap-2"><i data-lucide="tag" class="w-3.5 h-3.5 text-primary-500"></i> Loại: ${{'MEMBERSHIP':'Thẻ thành viên','CLASS':'Lớp học','PT':'Kèm PT'}[p.type] || p.type}</div>
       <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-primary-500"></i> Thời hạn: ${p.durationMonths || 0} tháng</div>
     </div>
     <div class="flex items-center justify-between pt-4 border-t border-darkborder mb-4">
-      <div class="text-lg font-black text-white">${fmtCurrency(p.price)}</div>
+      <div class="text-lg font-bold text-white">${fmtCurrency(p.price)}</div>
       ${statusBadge('ACTIVE')}
     </div>
     <div class="flex gap-2">
-      <button onclick='editPlan(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold uppercase rounded-xl transition-all">Sửa</button>
-      <button onclick="deleteItem('plans','${p.id}',loadPlans)" class="py-2 px-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+      <button onclick='editPlan(${JSON.stringify(p).replace(/'/g,"&#39;")})' class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase rounded-xl transition-all admin-only">Sửa</button>
+      <button onclick="deleteItem('plans','${p.id}',loadPlans)" class="py-2 px-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all admin-only"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
     </div>
   </div>`).join('') + (data.length===0?'<div class="col-span-3 p-20 text-center text-slate-500">Chưa có dữ liệu.</div>':'');
   lucide.createIcons({ nodes:[document.getElementById('plan-list-wrap')] });
 }
 window.editPlan = function(p=null) {
-  const types = ['MEMBERSHIP', 'CLASS', 'PT'];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">${p?'Sửa gói tập':'Thêm gói tập'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
+  const types = [{v:'MEMBERSHIP',l:'Thẻ thành viên'}, {v:'CLASS',l:'Lớp học'}, {v:'PT',l:'Kèm PT'}];
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">${p?'Sửa gói tập':'Thêm gói tập'}</h3><div class="grid grid-cols-2 gap-4 mb-8">
     <div class="col-span-2 space-y-2"><label class="lbl">Tên gói</label><input id="p-name" type="text" value="${escHtml(p?.name||'')}" class="form-input"></div>
-    <div class="space-y-2"><label class="lbl">Loại</label><select id="p-type" class="form-input">${types.map(t=>`<option value="${t}" ${p?.type==t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="space-y-2"><label class="lbl">Loại</label><select id="p-type" class="form-input">${types.map(t=>`<option value="${t.v}" ${p?.type==t.v?'selected':''}>${t.l}</option>`).join('')}</select></div>
     <div class="space-y-2"><label class="lbl">Giá (VND)</label><input id="p-price" type="number" value="${p?.price||0}" class="form-input"></div>
     <div class="space-y-2"><label class="lbl">Thời hạn (Tháng)</label><input id="p-duration" type="number" value="${p?.durationMonths||1}" class="form-input"></div>
     <div class="col-span-2 space-y-2"><label class="lbl">Mô tả</label><textarea id="p-desc" class="form-input h-20 resize-none">${escHtml(p?.description||'')}</textarea></div>
@@ -768,7 +1080,7 @@ window.savePlan = async function(id) {
 PAGE_RENDERERS['member_cards'] = async (c) => {
   c.innerHTML = `<div class="page-enter">
     <div class="flex items-center justify-between mb-8">
-      <h2 class="text-2xl font-black text-white uppercase">Thẻ Hội Viên</h2>
+      <h2 class="text-2xl font-bold text-white uppercase">Thẻ Hội Viên</h2>
       <button onclick="issueCard()" class="btn-primary flex items-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Cấp thẻ mới</button>
     </div>
     <div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden">
@@ -791,8 +1103,8 @@ window.loadMemberCards = async function() {
         <td class="text-slate-400">${c.expiryDate||'-'}</td>
         <td>${statusBadge(c.status)}</td>
         <td><div class="flex gap-2">
-          <button onclick="revokeCard('${c.id}')" class="text-xs px-2 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Thu hoi</button>
-          <button onclick="deleteItem('member-cards','${c.id}',loadMemberCards)" class="text-xs px-2 py-1 bg-slate-800 text-slate-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Xóa</button>
+          <button onclick="revokeCard('${c.id}')" class="text-xs px-2 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Thu hồi</button>
+          <button onclick="deleteItem('member-cards','${c.id}',loadMemberCards)" class="text-xs px-2 py-1 bg-slate-800 text-slate-400 rounded-lg hover:bg-red-500 hover:text-white transition-all admin-only">Xóa</button>
         </div></td>
       </tr>`).join('');
 };
@@ -801,7 +1113,7 @@ window.issueCard = async function() {
   const members = mr.data||[];
   const today = new Date().toISOString().split('T')[0];
   const expiry = new Date(Date.now()+365*24*3600*1000).toISOString().split('T')[0];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">Cap the hội viên</h3>
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Cap the hội viên</h3>
     <div class="space-y-4 mb-8">
       <div class="space-y-2"><label class="lbl">Hội viên *</label>
         <select id="card-member" class="form-input"><option value="">-- Chon hội viên --</option>
@@ -824,7 +1136,7 @@ window.saveCard = async function() {
 };
 window.revokeCard = async function(id) {
   const res = await API.put(`/api/member-cards/${id}`, {status:'REVOKED'});
-  if (res.success) { showToast('Da thu hoi the!', 'success'); loadMemberCards(); } else showToast(res.error, 'error');
+  if (res.success) { showToast('Đã thu hồi thẻ!', 'success'); loadMemberCards(); } else showToast(res.error, 'error');
 };
 
 /* ─── CHECK-IN / CHECK-OUT ──────────────────────────────────────────────────── */
@@ -832,7 +1144,7 @@ PAGE_RENDERERS['checkin'] = async (c) => {
   const today = new Date().toISOString().split('T')[0];
   c.innerHTML = `<div class="page-enter">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-black text-white uppercase">Check-in / Check-out</h2>
+      <h2 class="text-2xl font-bold text-white uppercase">Check-in / Check-out</h2>
       <div class="flex items-center gap-3">
         <input id="ci-date" type="date" value="${today}" class="form-input w-44" onchange="loadCheckins()">
         <button onclick="doCheckin()" class="btn-primary flex items-center gap-2"><i data-lucide="log-in" class="w-4 h-4"></i> Check-in</button>
@@ -840,21 +1152,21 @@ PAGE_RENDERERS['checkin'] = async (c) => {
     </div>
     <div class="grid grid-cols-3 gap-4 mb-6" id="ci-stats">
       <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center">
-        <div class="text-3xl font-black text-blue-400" id="stat-today">-</div>
-        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Luot hom nay</div>
+        <div class="text-3xl font-bold text-blue-400" id="stat-today">-</div>
+        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Lượt hôm nay</div>
       </div>
       <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center">
-        <div class="text-3xl font-black text-green-400" id="stat-inside">-</div>
-        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Dang trong CLB</div>
+        <div class="text-3xl font-bold text-green-400" id="stat-inside">-</div>
+        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Đang trong CLB</div>
       </div>
       <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center">
-        <div class="text-3xl font-black text-orange-400" id="stat-chart-wrap">-</div>
-        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Trung binh 7 ngay</div>
+        <div class="text-3xl font-bold text-orange-400" id="stat-chart-wrap">-</div>
+        <div class="text-xs text-slate-500 font-bold uppercase mt-1">Trung bình 7 ngày</div>
       </div>
     </div>
     <div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden">
       <table class="data-table"><thead><tr>
-        <th>Họ tên</th><th>Số thẻ</th><th>Giờ vào</th><th>Giờ ra</th><th>Loai</th><th>Thao tác</th>
+        <th>Họ tên</th><th>Số thẻ</th><th>Giờ vào</th><th>Giờ ra</th><th>LOẠI</th><th>Thao tác</th>
       </tr></thead><tbody id="ci-table-body"></tbody></table>
     </div></div>`;
   lucide.createIcons({nodes:[c]});
@@ -866,16 +1178,16 @@ window.loadCheckins = async function() {
   const res = await API.get(`/api/checkins?date=${date}`);
   const data = res.data||[];
   document.getElementById('ci-table-body').innerHTML = data.length===0
-    ? '<tr><td colspan="6" class="text-center py-10 text-slate-500">Chua co luot check-in nao.</td></tr>'
+    ? '<tr><td colspan="6" class="text-center py-10 text-slate-500">Chưa có lượt check-in nào.</td></tr>'
     : data.map(r=>`<tr>
         <td><span class="font-bold text-white">${escHtml(r.fullName)}</span><div class="text-xs text-slate-500">${escHtml(r.phone)}</div></td>
         <td><span class="font-mono text-xs text-slate-400">${r.cardNumber||'MANUAL'}</span></td>
         <td class="text-green-400 font-bold">${r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : '-'}</td>
-        <td class="${r.checkOutTime?'text-red-400':'text-yellow-400'} font-bold">${r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : 'Chua ra'}</td>
-        <td><span class="badge ${r.checkType==='CARD'?'badge-blue':'badge-gray'}">${r.checkType}</span></td>
+        <td class="${r.checkOutTime?'text-red-400':'text-yellow-400'} font-bold">${r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : 'Chưa ra'}</td>
+        <td><span class="badge ${r.checkType==='CARD'?'badge-blue':'badge-gray'}">${r.checkType === 'CARD' ? 'Quét thẻ' : 'Thủ công'}</span></td>
         <td><div class="flex gap-2">
           ${!r.checkOutTime ? `<button onclick="doCheckout('${r.id}')" class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500 hover:text-white transition-all">Check-out</button>` : ''}
-          <button onclick="deleteItem('checkins','${r.id}',loadCheckins)" class="text-xs px-2 py-1 bg-slate-800 text-slate-400 rounded-lg hover:bg-red-500 hover:text-white transition-all">Xóa</button>
+          <button onclick="deleteItem('checkins','${r.id}',loadCheckins)" class="text-xs px-2 py-1 bg-slate-800 text-slate-400 rounded-lg hover:bg-red-500 hover:text-white transition-all admin-only">Xóa</button>
         </div></td>
       </tr>`).join('');
 };
@@ -896,7 +1208,7 @@ window.loadCheckinStats = async function() {
 window.doCheckin = async function() {
   const mr = await API.get('/api/members');
   const members = mr.data||[];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">Check-in hội viên</h3>
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Check-in hội viên</h3>
     <div class="space-y-4 mb-8">
       <div class="space-y-2 relative">
         <label class="lbl">Hội viên *</label>
@@ -910,7 +1222,7 @@ window.doCheckin = async function() {
         </div>
       </div>
       <div class="space-y-2"><label class="lbl">Phương thức</label>
-        <select id="ci-type" class="form-input"><option value="MANUAL">Thu cong</option><option value="CARD">Quet the</option></select></div>
+        <select id="ci-type" class="form-input"><option value="MANUAL">Thủ công</option><option value="CARD">Quét thẻ</option></select></div>
       <div class="space-y-2"><label class="lbl">Ghi chú</label><input id="ci-note" type="text" class="form-input" placeholder="..."></div>
     </div>
     <div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button>
@@ -933,7 +1245,7 @@ PAGE_RENDERERS['trainer_attendance'] = async (c) => {
   const m = now.getMonth()+1, y = now.getFullYear();
   c.innerHTML = `<div class="page-enter">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-black text-white uppercase">Chấm công & Lương HLV</h2>
+      <h2 class="text-2xl font-bold text-white uppercase">Chấm công & Lương HLV</h2>
       <div class="flex items-center gap-3">
         <select id="att-month" class="form-input w-32" onchange="loadAttendance()">
           ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i=>`<option value="${i}" ${i===m?'selected':''}>Tháng ${i}</option>`).join('')}
@@ -950,12 +1262,19 @@ PAGE_RENDERERS['trainer_attendance'] = async (c) => {
       <div id="payroll-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
 
-    <h3 class="text-sm font-bold text-slate-500 uppercase mb-4 tracking-wider flex items-center gap-2">
-      <i data-lucide="list" class="w-4 h-4"></i> Chi tiết chấm công
-    </h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+        <i data-lucide="list" class="w-4 h-4"></i> Chi tiết chấm công
+      </h3>
+      <div class="flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
+        <span class="text-xs text-slate-400 font-bold">LỌC THEO NGÀY:</span>
+        <input id="att-filter-date" type="date" class="form-input text-xs w-36 py-1 bg-transparent border-0 text-slate-300" onchange="loadAttendance()">
+        <button onclick="document.getElementById('att-filter-date').value=''; loadAttendance()" class="bg-slate-700 hover:bg-slate-600 text-white rounded px-2 py-1 text-xs transition-colors" title="Xóa lọc"><i data-lucide="x" class="w-3 h-3"></i></button>
+      </div>
+    </div>
     <div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden">
       <table class="data-table"><thead><tr>
-        <th>HLV</th><th>Ngày</th><th>Giờ vào</th><th>Giờ ra</th><th>Số buổi</th><th>Trạng thái</th><th>Thao tác</th>
+        <th>HLV</th><th>Ngày</th><th>Ca / Lớp</th><th>Giờ vào</th><th>Giờ ra</th><th>Số buổi</th><th>Trạng thái</th><th>Thao tác</th>
       </tr></thead><tbody id="att-table-body"></tbody></table>
     </div></div>`;
   lucide.createIcons({nodes:[c]});
@@ -964,20 +1283,25 @@ PAGE_RENDERERS['trainer_attendance'] = async (c) => {
 window.loadAttendance = async function() {
   const month = document.getElementById('att-month')?.value;
   const year = document.getElementById('att-year')?.value;
+  const filterDate = document.getElementById('att-filter-date')?.value;
   
   // Load Attendance
-  const res = await API.get(`/api/trainer-attendance?month=${month}&year=${year}`);
+  let url = `/api/trainer-attendance?month=${month}&year=${year}`;
+  if (filterDate) url += `&date=${filterDate}`;
+  const res = await API.get(url);
   const data = res.data||[];
+  window.currentAttData = data;
   document.getElementById('att-table-body').innerHTML = data.length===0
     ? '<tr><td colspan="7" class="text-center py-10 text-slate-500">Chưa có dữ liệu chấm công.</td></tr>'
     : data.map(r=>`<tr>
         <td class="font-bold text-white">${escHtml(r.trainerName)}</td>
         <td class="text-slate-400">${r.attendanceDate}</td>
+        <td class="text-primary-400 text-sm font-bold">${escHtml(r.className || 'Ca ngoài lớp')}</td>
         <td class="text-green-400 font-mono text-xs">${r.checkIn||'-'}</td>
         <td class="text-red-400 font-mono text-xs">${r.checkOut||'-'}</td>
         <td><span class="badge badge-blue">${r.sessionsCount} buổi</span></td>
         <td>${statusBadge(r.status)}</td>
-        <td><button onclick="deleteItem('trainer-attendance','${r.id}',loadAttendance)" class="text-xs px-2 py-1 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all font-bold">Xóa</button></td>
+        <td><button onclick="editAttendance('${r.id}')" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all font-bold admin-only">Sửa</button></td>
       </tr>`).join('');
 
   // Load Payroll
@@ -986,39 +1310,40 @@ window.loadAttendance = async function() {
   document.getElementById('payroll-grid').innerHTML = payroll.map(p => `
     <div class="bg-darkcard border border-darkborder rounded-2xl p-5 shadow-lg">
       <div class="flex items-center justify-between mb-4">
-        <h4 class="font-black text-white uppercase">${escHtml(p.trainerName)}</h4>
+        <h4 class="font-bold text-white uppercase">${escHtml(p.trainerName)}</h4>
         <div class="text-xs font-bold text-primary-500">${escHtml(p.specialty)}</div>
       </div>
       <div class="grid grid-cols-3 gap-2 mb-4">
         <div class="text-center p-2 bg-slate-900/50 rounded-xl">
-          <div class="text-[10px] text-slate-500 uppercase font-bold">Buổi</div>
-          <div class="text-lg font-black text-white">${p.sessions}</div>
+          <div class="text-xs text-slate-500 uppercase font-bold">Buổi</div>
+          <div class="text-lg font-bold text-white">${p.sessions}</div>
         </div>
         <div class="text-center p-2 bg-slate-900/50 rounded-xl">
-          <div class="text-[10px] text-slate-500 uppercase font-bold">Lớp</div>
-          <div class="text-lg font-black text-white">${p.classes}</div>
+          <div class="text-xs text-slate-500 uppercase font-bold">Lớp</div>
+          <div class="text-lg font-bold text-white">${p.classes}</div>
         </div>
         <div class="text-center p-2 bg-slate-900/50 rounded-xl">
-          <div class="text-[10px] text-slate-500 uppercase font-bold">HV</div>
-          <div class="text-lg font-black text-white">${p.students}</div>
+          <div class="text-xs text-slate-500 uppercase font-bold">HV</div>
+          <div class="text-lg font-bold text-white">${p.students}</div>
         </div>
       </div>
       <div class="pt-4 border-t border-darkborder flex justify-between items-center">
-        <span class="text-[10px] font-bold text-slate-500 uppercase">Lương dự kiến</span>
-        <span class="text-lg font-black text-green-400">${fmtCurrency(p.totalSalary)}</span>
+        <span class="text-xs font-bold text-slate-500 uppercase">Lương dự kiến</span>
+        <span class="text-lg font-bold text-green-400">${fmtCurrency(p.totalSalary)}</span>
       </div>
     </div>
   `).join('');
 };
 window.addAttendance = async function() {
-  const tr = await API.get('/api/trainers');
+  const [tr, cl] = await Promise.all([API.get('/api/trainers'), API.get('/api/classes')]);
   const trainers = tr.data||[];
+  window.allClasses = cl.data||[];
   const today = new Date().toISOString().split('T')[0];
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">Them cham cong HLV</h3>
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Them cham cong HLV</h3>
     <div class="grid grid-cols-2 gap-4 mb-8">
       <div class="col-span-2 space-y-2 relative">
         <label class="lbl">Huấn luyện viên *</label>
-        <input type="hidden" id="att-trainer" value="">
+        <input type="hidden" id="att-trainer" value="" onchange="updateTrainerClasses(this.value)">
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
           <input type="text" id="att-trainer-search" class="form-input pl-11 focus:ring-primary-500 focus:border-primary-500" placeholder="Nhập tên HLV..." autocomplete="off" onfocus="document.getElementById('att-dropdown').classList.remove('hidden')" onblur="setTimeout(()=>document.getElementById('att-dropdown').classList.add('hidden'), 200)" onkeyup="filterCustomSelect('att-trainer-search', 'att-dropdown')">
@@ -1026,6 +1351,12 @@ window.addAttendance = async function() {
         <div id="att-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar p-1">
           ${trainers.map(t=>`<div class="custom-option px-4 py-2.5 hover:bg-primary-500/20 cursor-pointer rounded-lg text-sm transition-colors text-white" onclick="selectCustomOption('att-trainer', 'att-trainer-search', '${t.id}', '${escHtml(t.fullName)}')">${escHtml(t.fullName)}</div>`).join('')}
         </div>
+      </div>
+      <div class="col-span-2 space-y-2">
+        <label class="lbl">Ca dạy / Lớp học (Tự động tải theo HLV)</label>
+        <select id="att-class" class="form-input">
+          <option value="">Ca ngoài lớp (PT 1-1, Hành chính)</option>
+        </select>
       </div>
       <div class="space-y-2"><label class="lbl">Ngày</label><input id="att-date" type="date" value="${today}" class="form-input"></div>
       <div class="space-y-2"><label class="lbl">Trạng thái</label>
@@ -1039,10 +1370,67 @@ window.addAttendance = async function() {
       <button onclick="saveAttendance()" class="btn-primary">Luu cong</button></div></div>`);
 };
 window.saveAttendance = async function() {
-  const body = { trainerId: document.getElementById('att-trainer').value, attendanceDate: document.getElementById('att-date').value, checkIn: document.getElementById('att-ci').value, checkOut: document.getElementById('att-co').value, status: document.getElementById('att-status').value, sessionsCount: document.getElementById('att-sessions').value, note: document.getElementById('att-note').value };
+  const body = { trainerId: document.getElementById('att-trainer').value, classId: document.getElementById('att-class').value || null, attendanceDate: document.getElementById('att-date').value, checkIn: document.getElementById('att-ci').value, checkOut: document.getElementById('att-co').value, status: document.getElementById('att-status').value, sessionsCount: document.getElementById('att-sessions').value, note: document.getElementById('att-note').value };
   if (!body.trainerId) { showToast('Vui long chon HLV', 'error'); return; }
-  const res = await API.post('/api/trainer-attendance', body);
+  
+  const editId = document.getElementById('att-edit-id') ? document.getElementById('att-edit-id').value : null;
+  const res = editId 
+    ? await API.put(`/api/trainer-attendance/${editId}`, body)
+    : await API.post('/api/trainer-attendance', body);
+    
   if (res.success) { showToast('Da luu cham cong!', 'success'); closeModal(); loadAttendance(); } else showToast(res.error, 'error');
+};
+
+window.editAttendance = async function(id) {
+  const r = (window.currentAttData || []).find(x => x.id === id);
+  if (!r) return;
+  
+  const cl = await API.get('/api/classes');
+  window.allClasses = cl.data||[];
+  
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Sua cham cong HLV</h3>
+    <input type="hidden" id="att-edit-id" value="${r.id}">
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="col-span-2 space-y-2 relative">
+        <label class="lbl">Huấn luyện viên *</label>
+        <input type="hidden" id="att-trainer" value="${r.trainerId}" onchange="updateTrainerClasses(this.value)">
+        <input type="text" disabled class="form-input bg-slate-800 text-slate-400" value="${escHtml(r.trainerName)}">
+      </div>
+      <div class="col-span-2 space-y-2">
+        <label class="lbl">Ca dạy / Lớp học (Tự động tải theo HLV)</label>
+        <select id="att-class" class="form-input">
+          <option value="">Ca ngoài lớp (PT 1-1, Hành chính)</option>
+        </select>
+      </div>
+      <div class="space-y-2"><label class="lbl">Ngày</label><input id="att-date" type="date" value="${r.attendanceDate}" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Trạng thái</label>
+        <select id="att-status" class="form-input">
+          <option value="PRESENT" ${r.status==='PRESENT'?'selected':''}>Co mat</option>
+          <option value="LATE" ${r.status==='LATE'?'selected':''}>Đi muộn</option>
+          <option value="HALF" ${r.status==='HALF'?'selected':''}>Nua ngay</option>
+          <option value="ABSENT" ${r.status==='ABSENT'?'selected':''}>Vắng mặt</option>
+        </select></div>
+      <div class="space-y-2"><label class="lbl">Giờ vào</label><input id="att-ci" type="time" value="${r.checkIn || ''}" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Giờ ra</label><input id="att-co" type="time" value="${r.checkOut || ''}" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Số buổi day</label><input id="att-sessions" type="number" value="${r.sessionsCount}" min="0" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Ghi chú</label><input id="att-note" type="text" class="form-input" value="${r.note || ''}" placeholder="..."></div>
+    </div>
+    <div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button>
+      <button onclick="saveAttendance()" class="btn-primary">Luu cong</button></div></div>`);
+      
+  updateTrainerClasses(r.trainerId, r.classId);
+};
+
+window.updateTrainerClasses = function(trainerId, selectedClassId = '') {
+  const classSelect = document.getElementById('att-class');
+  if (!classSelect) return;
+  
+  const classes = (window.allClasses || []).filter(c => c.trainerId === trainerId);
+  let html = '<option value="">Ca ngoài lớp (PT 1-1, Hành chính)</option>';
+  classes.forEach(c => {
+    html += `<option value="${c.id}" ${c.id === selectedClassId ? 'selected' : ''}>${escHtml(c.name)} - ${escHtml(c.time)} ${escHtml(c.dayOfWeek)}</option>`;
+  });
+  classSelect.innerHTML = html;
 };
 
 /* ─── TÍNH LƯƠNG HLV ────────────────────────────────────────────────────────── */
@@ -1051,7 +1439,7 @@ PAGE_RENDERERS['trainer_salary'] = async (c) => {
   const m = now.getMonth()+1, y = now.getFullYear();
   c.innerHTML = `<div class="page-enter">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-black text-white uppercase">Tính lương HLV</h2>
+      <h2 class="text-2xl font-bold text-white uppercase">Tính lương HLV</h2>
       <div class="flex items-center gap-3">
         <select id="sal-month" class="form-input w-32" onchange="loadSalary()">
           ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i=>`<option value="${i}" ${i===m?'selected':''}>Thang ${i}</option>`).join('')}
@@ -1063,7 +1451,7 @@ PAGE_RENDERERS['trainer_salary'] = async (c) => {
     <div id="sal-summary" class="grid grid-cols-3 gap-4 mb-6"></div>
     <div class="bg-darkcard rounded-3xl border border-darkborder overflow-hidden">
       <table class="data-table"><thead><tr>
-        <th>HLV</th><th>Chuyên môn</th><th>Lương cơ bản</th><th>Số buổi</th><th>Thưởng buổi</th><th>Tổng lương</th><th>Trạng thái</th><th>Thao tác</th>
+        <th>HLV</th><th>Chuyên môn</th><th>LCB</th><th>Tiền dạy (Số buổi)</th><th>Thưởng</th><th>Khấu trừ</th><th>Tổng lương</th><th>Trạng thái</th><th>Thao tác</th>
       </tr></thead><tbody id="sal-table-body"></tbody></table>
     </div></div>`;
   lucide.createIcons({nodes:[c]});
@@ -1079,31 +1467,37 @@ window.loadSalary = async function() {
   const totalPending = data.filter(r=>r.paymentStatus==='PENDING').reduce((a,b)=>a+parseFloat(b.totalAmount||0),0);
   const sumEl = document.getElementById('sal-summary');
   if (sumEl) sumEl.innerHTML = `
-    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-black text-green-400">${fmtCurrency(totalPaid)}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Da thanh toan</div></div>
-    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-black text-yellow-400">${fmtCurrency(totalPending)}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Cho thanh toan</div></div>
-    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-black text-white">${data.length}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Tong HLV</div></div>`;
+    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-bold text-green-400">${fmtCurrency(totalPaid)}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Da thanh toan</div></div>
+    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-bold text-yellow-400">${fmtCurrency(totalPending)}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Cho thanh toan</div></div>
+    <div class="bg-darkcard p-5 rounded-2xl border border-darkborder text-center"><div class="text-2xl font-bold text-white">${data.length}</div><div class="text-xs text-slate-500 font-bold uppercase mt-1">Tong HLV</div></div>`;
   document.getElementById('sal-table-body').innerHTML = data.length===0
     ? '<tr><td colspan="8" class="text-center py-10 text-slate-500">Chua co du lieu. Nhan "Tính lương" de tinh tu dong.</td></tr>'
     : data.map(r=>`<tr>
         <td class="font-bold text-white">${escHtml(r.trainerName)}</td>
         <td class="text-slate-400 text-xs">${escHtml(r.specialty||'-')}</td>
         <td class="text-white">${fmtCurrency(r.baseSalary)}</td>
-        <td><span class="badge badge-blue">${r.totalSessions} buoi</span></td>
-        <td class="text-blue-400">${fmtCurrency(r.sessionBonus)}</td>
-        <td class="font-black text-green-400 text-base">${fmtCurrency(r.totalAmount)}</td>
+        <td>
+          <div class="text-blue-400 font-bold">${fmtCurrency(r.sessionBonus)}</div>
+          <div class="text-xs text-slate-500">${r.totalSessions} buổi</div>
+        </td>
+        <td class="text-green-400 font-bold">${fmtCurrency(r.bonus||0)}</td>
+        <td class="text-red-400 font-bold">${fmtCurrency(r.deductions||0)}</td>
+        <td class="font-bold text-green-400 text-base">${fmtCurrency(r.totalAmount)}</td>
         <td>${r.paymentStatus==='PAID'?'<span class="badge badge-green">Da tra</span>':'<span class="badge badge-yellow">Chua tra</span>'}</td>
         <td><div class="flex gap-2">
-          ${r.paymentStatus==='PENDING'?`<button onclick="paySalary('${r.id}')" class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500 hover:text-white transition-all">Thanh toan</button>`:''}
+          ${r.paymentStatus==='PENDING'?`<button onclick="editSalary('${r.id}', ${r.bonus||0}, ${r.deductions||0})" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all">Sửa</button>
+          <button onclick="paySalary('${r.id}')" class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500 hover:text-white transition-all">Thanh toan</button>`:''}
         </div></td>
       </tr>`).join('');
 };
 window.calcSalary = async function() {
-  openModal(`<div class="p-8"><h3 class="text-xl font-black text-white uppercase mb-6">Cau hinh tinh luong</h3>
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Cau hinh tinh luong</h3>
     <div class="space-y-4 mb-8">
       <div class="space-y-2"><label class="lbl">Lương cơ bản (VND)</label><input id="sal-base" type="number" value="5000000" class="form-input"></div>
-      <div class="space-y-2"><label class="lbl">Thuong moi buoi day (VND)</label><input id="sal-bonus" type="number" value="150000" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Đơn giá/buổi dạy (VND)</label><input id="sal-bonus" type="number" value="150000" class="form-input"></div>
       <div class="p-4 bg-slate-900/50 rounded-xl text-xs text-slate-400">
-        Cong thuc: Tổng lương = Lương cơ bản + (Số buổi x Thuong moi buoi)
+        Công thức: Lương HLV = Lương cơ bản + (Số buổi dạy hợp lệ × Đơn giá/buổi) + Thưởng - Khấu trừ<br>
+        (Lưu ý: Tiền Thưởng và Khấu trừ sẽ được nhập riêng cho từng HLV sau khi tính lương cơ bản).
       </div>
     </div>
     <div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button>
@@ -1114,9 +1508,444 @@ window.runCalcSalary = async function() {
   const year = document.getElementById('sal-year').value;
   const body = { month, year, baseSalary: document.getElementById('sal-base').value, bonusPerSession: document.getElementById('sal-bonus').value };
   const res = await API.post('/api/trainer-salary/calculate', body);
-  if (res.success) { showToast('Da tinh luong xong!', 'success'); closeModal(); loadSalary(); } else showToast(res.error, 'error');
+  if (res.success) { showToast('Đã tính lương thành công!', 'success'); closeModal(); loadSalary(); } else showToast(res.error, 'error');
+};
+
+window.editSalary = function(id, currentBonus, currentDeductions) {
+  openModal(`<div class="p-8"><h3 class="text-xl font-bold text-white uppercase mb-6">Sửa Thưởng / Khấu trừ</h3>
+    <input type="hidden" id="edit-sal-id" value="${id}">
+    <div class="space-y-4 mb-8">
+      <div class="space-y-2"><label class="lbl">Thưởng (VND)</label><input id="edit-sal-bonus" type="number" value="${currentBonus}" class="form-input"></div>
+      <div class="space-y-2"><label class="lbl">Khấu trừ (VND)</label><input id="edit-sal-deductions" type="number" value="${currentDeductions}" class="form-input"></div>
+    </div>
+    <div class="flex justify-end gap-3"><button onclick="closeModal()" class="btn-gray">Hủy</button>
+      <button onclick="saveSalary()" class="btn-primary">Lưu</button></div></div>`);
+};
+
+window.saveSalary = async function() {
+  const id = document.getElementById('edit-sal-id').value;
+  const bonus = document.getElementById('edit-sal-bonus').value || 0;
+  const deductions = document.getElementById('edit-sal-deductions').value || 0;
+  const res = await API.put(`/api/trainer-salary/${id}`, { bonus, deductions });
+  if (res.success) { showToast('Đã cập nhật lương', 'success'); closeModal(); loadSalary(); } else showToast(res.error, 'error');
 };
 window.paySalary = async function(id) {
   const res = await API.put(`/api/trainer-salary/${id}/pay`, {});
   if (res.success) { showToast('Da thanh toan luong!', 'success'); loadSalary(); } else showToast(res.error, 'error');
+};
+window.viewMemberDetails = async function(id) {
+  const [mRes, cRes, bRes] = await Promise.all([
+    API.get('/api/members'),
+    API.get('/api/member-cards'),
+    API.get('/api/billing')
+  ]);
+  const m = (mRes.data || []).find(x => x.id === id);
+  if (!m) return showToast('Không tìm thấy hội viên', 'error');
+  
+  const cards = (cRes.data || []).filter(c => c.memberId === id);
+  const bills = (bRes.data || []).filter(b => b.memberId === id);
+  
+  openModal(`<div class="p-8">
+    <div class="flex items-center gap-4 mb-8 border-b border-darkborder/50 pb-6">
+      <div class="w-20 h-20 rounded-2xl bg-orange-500/10 flex items-center justify-center text-primary-500 text-3xl font-bold border border-primary-500/20 shadow-inner">${(m.fullName||'H')[0].toUpperCase()}</div>
+      <div>
+        <h3 class="text-2xl font-bold text-white uppercase tracking-tight">${escHtml(m.fullName)}</h3>
+        <div class="text-sm font-bold text-slate-500 mt-1">${m.email ? escHtml(m.email) : (m.username ? '@' + escHtml(m.username) : 'Chưa có thông tin')}</div>
+      </div>
+      <div class="ml-auto">${statusBadge(m.status)}</div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-8 mb-8">
+      <div>
+        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4"></i> Thông tin cá nhân</h4>
+        <div class="space-y-3 bg-darkcard p-4 rounded-2xl border border-darkborder">
+          <div class="flex justify-between"><span class="text-xs text-slate-400">Số điện thoại</span><span class="text-sm font-bold text-white">${escHtml(m.phone)}</span></div>
+          <div class="flex justify-between"><span class="text-xs text-slate-400">Ngày sinh</span><span class="text-sm font-bold text-white">${m.birthDate ? fmtDate(m.birthDate) : '---'}</span></div>
+          <div class="flex justify-between"><span class="text-xs text-slate-400">Giới tính</span><span class="text-sm font-bold text-white">${escHtml(m.gender)}</span></div>
+          <div class="flex justify-between"><span class="text-xs text-slate-400">Quê quán</span><span class="text-sm font-bold text-white">${escHtml(m.homeTown || '---')}</span></div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Thẻ hội viên</h4>
+        <div class="space-y-3 bg-darkcard p-4 rounded-2xl border border-darkborder max-h-48 overflow-y-auto custom-scrollbar">
+          ${cards.length === 0 ? '<div class="text-center text-xs text-slate-500 py-4">Chưa có thẻ</div>' : cards.map(c => `
+            <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+              <div>
+                <div class="text-sm font-bold text-white">${escHtml(c.cardNumber)}</div>
+                <div class="text-xs text-slate-400 mt-1">HSD: ${c.expiryDate ? fmtDate(c.expiryDate) : '---'}</div>
+              </div>
+              ${statusBadge(c.status)}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    
+    <div>
+      <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="banknote" class="w-4 h-4"></i> Lịch sử hóa đơn</h4>
+      <div class="bg-darkcard border border-darkborder rounded-2xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-800/50 text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <th class="p-3">Mã HĐ</th>
+              <th class="p-3">Loại</th>
+              <th class="p-3">Số tiền</th>
+              <th class="p-3 text-right">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bills.length === 0 ? '<tr><td colspan="4" class="p-4 text-center text-xs text-slate-500">Không có hóa đơn</td></tr>' : bills.map(b => `
+              <tr class="border-t border-darkborder/50 hover:bg-slate-800/20">
+                <td class="p-3 text-sm font-bold text-white">${escHtml(b.id)}</td>
+                <td class="p-3 text-xs text-slate-400">${escHtml(b.sourceType)}</td>
+                <td class="p-3 text-sm font-bold text-primary-500">${fmtCurrency(b.finalAmount)}</td>
+                <td class="p-3 text-right">${statusBadge(b.paymentStatus)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="mt-8 flex justify-end">
+      <button onclick="closeModal()" class="btn-gray">Đóng</button>
+    </div>
+  </div>`);
+}
+
+/* ─── PT SPECIFIC PAGES ──────────────────────────────────────────────────────── */
+
+PAGE_RENDERERS['pt_profile'] = async (c) => {
+  try {
+    const res = await API.get('/api/pt/profile');
+    if (!res.success) throw new Error(res.error);
+    const d = res.data;
+    c.innerHTML = `<div class="page-enter max-w-2xl mx-auto">
+      <h2 class="text-2xl font-bold text-white uppercase tracking-tight mb-8">HỒ SƠ CỦA TÔI</h2>
+      <div class="bg-darkcard border border-darkborder rounded-[32px] p-8 shadow-xl">
+        <div class="flex items-center gap-6 mb-8">
+          <div class="w-24 h-24 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center text-3xl font-bold text-white">
+            ${(d.fullName||'U')[0].toUpperCase()}
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-white mb-2">${escHtml(d.fullName)}</h3>
+            <div class="flex items-center gap-2 text-primary-500 font-bold bg-primary-500/10 px-3 py-1 rounded-full text-sm inline-flex">
+              <i data-lucide="award" class="w-4 h-4"></i> Huấn luyện viên
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div><label class="lbl">Tên đăng nhập</label><div class="text-white font-medium p-3 bg-slate-900/50 rounded-xl border border-slate-800">${escHtml(d.username)}</div></div>
+          <div><label class="lbl">Số điện thoại</label><div class="text-white font-medium p-3 bg-slate-900/50 rounded-xl border border-slate-800">${escHtml(d.phone||'--')}</div></div>
+          <div class="md:col-span-2"><label class="lbl">Chuyên môn</label><div class="text-white font-medium p-3 bg-slate-900/50 rounded-xl border border-slate-800">${escHtml(d.specialty||'--')}</div></div>
+          <div class="md:col-span-2"><label class="lbl">Địa chỉ</label><div class="text-white font-medium p-3 bg-slate-900/50 rounded-xl border border-slate-800">${escHtml(d.address||'--')}</div></div>
+        </div>
+      </div>
+    </div>`;
+    lucide.createIcons({ nodes: [c] });
+  } catch (e) { console.error(e); c.innerHTML = `<div class="p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
+};
+
+PAGE_RENDERERS['pt_classes'] = async (c) => {
+  try {
+    const res = await API.get('/api/pt/classes');
+    if (!res.success) throw new Error(res.error);
+    const data = res.data || [];
+    
+    c.innerHTML = `<div class="page-enter">
+      <h2 class="text-2xl font-bold text-white uppercase tracking-tight mb-8">LỚP CỦA TÔI (${data.length})</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ${data.map(cl => `
+          <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl hover:shadow-primary-500/5 transition-all group">
+            <div class="flex justify-between items-start mb-4">
+              <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary-500 transition-colors">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+              </div>
+              ${statusBadge(cl.status)}
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">${escHtml(cl.name)}</h3>
+            <div class="space-y-2 mb-6">
+              <div class="flex items-center gap-2 text-sm text-slate-400"><i data-lucide="calendar" class="w-4 h-4 text-slate-500"></i> ${escHtml(cl.dayOfWeek||'--')}</div>
+              <div class="flex items-center gap-2 text-sm text-slate-400"><i data-lucide="clock" class="w-4 h-4 text-slate-500"></i> ${escHtml(cl.time||'--')}</div>
+              <div class="flex items-center gap-2 text-sm text-slate-400"><i data-lucide="users" class="w-4 h-4 text-slate-500"></i> Sĩ số: <span class="font-bold text-white">${cl.enrolled}/${cl.capacity}</span></div>
+            </div>
+            <button onclick="ptManageClass('${cl.id}', '${escHtml(cl.name)}')" class="w-full btn-primary flex items-center justify-center gap-2">
+              <i data-lucide="list-checks" class="w-4 h-4"></i> Điểm danh & Học viên
+            </button>
+          </div>
+        `).join('')}
+        ${data.length === 0 ? '<div class="col-span-full p-20 text-center text-slate-500">Bạn chưa được phân công lớp nào.</div>' : ''}
+      </div>
+    </div>`;
+    lucide.createIcons({ nodes: [c] });
+  } catch (e) { console.error(e); c.innerHTML = `<div class="p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
+};
+
+window.ptManageClass = async function(classId, className) {
+  openModal(`<div class="p-8 max-w-4xl mx-auto" id="pt-class-modal-content">
+    <div class="flex justify-center py-10"><div class="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div></div>
+  </div>`);
+  
+  try {
+    const res = await API.get(`/api/pt/classes/${classId}/students`);
+    if (!res.success) throw new Error(res.error);
+    const students = res.data || [];
+    
+    const today = new Date().toISOString().split('T')[0];
+
+    const content = `
+      <div class="flex items-center justify-between mb-8">
+        <h3 class="text-xl font-bold text-white uppercase">Quản lý lớp: <span class="text-primary-500">${className}</span></h3>
+        <div class="flex gap-2">
+          <button onclick="loadAttendanceHistory('${classId}')" class="btn-gray flex items-center gap-2"><i data-lucide="history" class="w-4 h-4"></i> Lịch sử</button>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+      </div>
+      
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-6 mb-6">
+        <div class="flex items-center justify-between mb-6">
+          <h4 class="font-bold text-white uppercase text-sm">Điểm danh ngày:</h4>
+          <input type="date" id="attendance-date" class="form-input w-auto py-2" value="${today}">
+        </div>
+        
+        <div class="overflow-x-auto mb-6">
+          <table class="data-table w-full">
+            <thead>
+              <tr>
+                <th class="w-12 text-center">Có mặt</th>
+                <th>Học viên</th>
+                <th>Tình trạng tập luyện / Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+              ${students.map(st => `
+                <tr class="attendance-row" data-member-id="${st.id}">
+                  <td class="text-center">
+                    <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-primary-500 focus:ring-primary-500 focus:ring-offset-darkcard attendance-status" checked>
+                  </td>
+                  <td class="font-bold text-white">
+                    <div>${escHtml(st.fullName)}</div>
+                    <div class="text-xs text-slate-500 font-normal mt-1">${escHtml(st.phone)}</div>
+                  </td>
+                  <td>
+                    <input type="text" class="form-input py-2 text-sm attendance-note" placeholder="Tốt, yếu, cần lưu ý...">
+                  </td>
+                </tr>
+              `).join('')}
+              ${students.length === 0 ? '<tr><td colspan="3" class="p-8 text-center text-slate-500">Lớp chưa có học viên nào.</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+        ${students.length > 0 ? `<button onclick="submitAttendance('${classId}')" class="btn-primary w-full flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Lưu Điểm danh</button>` : ''}
+      </div>
+      
+      <div id="attendance-history-wrap" class="hidden"></div>
+    `;
+    
+    document.getElementById('pt-class-modal-content').innerHTML = content;
+    lucide.createIcons({ nodes: [document.getElementById('pt-class-modal-content')] });
+  } catch(e) {
+    document.getElementById('pt-class-modal-content').innerHTML = `<div class="p-8 text-red-400">Lỗi: ${e.message}</div>`;
+  }
+};
+
+window.submitAttendance = async function(classId) {
+  const dateStr = document.getElementById('attendance-date').value;
+  if (!dateStr) return showToast('Vui lòng chọn ngày', 'error');
+  
+  const rows = document.querySelectorAll('.attendance-row');
+  const attendance = [];
+  rows.forEach(r => {
+    attendance.push({
+      memberId: r.getAttribute('data-member-id'),
+      status: r.querySelector('.attendance-status').checked ? 'PRESENT' : 'ABSENT',
+      note: r.querySelector('.attendance-note').value
+    });
+  });
+  
+  const res = await API.post(`/api/pt/classes/${classId}/attendance`, { date: dateStr, attendance });
+  if (res.success) {
+    showToast('Lưu điểm danh thành công!', 'success');
+  } else {
+    showToast(res.error, 'error');
+  }
+};
+
+window.loadAttendanceHistory = async function(classId) {
+  const wrap = document.getElementById('attendance-history-wrap');
+  wrap.classList.toggle('hidden');
+  if (wrap.classList.contains('hidden')) return;
+  
+  wrap.innerHTML = `<div class="flex justify-center p-4"><div class="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div></div>`;
+  
+  try {
+    const res = await API.get(`/api/pt/classes/${classId}/attendance`);
+    if (!res.success) throw new Error(res.error);
+    const data = res.data || [];
+    
+    wrap.innerHTML = `
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-6">
+        <h4 class="font-bold text-white uppercase text-sm mb-4">Lịch sử điểm danh</h4>
+        <div class="overflow-x-auto max-h-64 custom-scrollbar">
+          <table class="data-table w-full">
+            <thead class="sticky top-0 bg-darkcard shadow-md">
+              <tr>
+                <th>Ngày</th>
+                <th>Học viên</th>
+                <th>Trạng thái</th>
+                <th>Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(d => `
+                <tr>
+                  <td class="text-sm font-bold text-white">${fmtDate(d.date)}</td>
+                  <td class="text-sm">${escHtml(d.fullName)}</td>
+                  <td>${d.status === 'PRESENT' ? '<span class="text-green-500 font-bold text-xs"><i data-lucide="check" class="w-4 h-4 inline"></i> Có mặt</span>' : '<span class="text-red-500 font-bold text-xs"><i data-lucide="x" class="w-4 h-4 inline"></i> Vắng</span>'}</td>
+                  <td class="text-sm text-slate-400">${escHtml(d.note||'--')}</td>
+                </tr>
+              `).join('')}
+              ${data.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-slate-500">Chưa có dữ liệu điểm danh.</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    lucide.createIcons({ nodes: [wrap] });
+  } catch(e) {
+    wrap.innerHTML = `<div class="p-4 text-red-400">Lỗi: ${e.message}</div>`;
+  }
+};
+
+PAGE_RENDERERS['pt_work'] = async (c) => {
+  try {
+    const [resAtt, resSal, resShifts] = await Promise.all([
+      API.get('/api/pt/attendance'),
+      API.get('/api/pt/salary'),
+      API.get('/api/pt/today-shifts')
+    ]);
+    
+    if (!resAtt.success) throw new Error(resAtt.error);
+    if (!resSal.success) throw new Error(resSal.error);
+    if (!resShifts.success) throw new Error(resShifts.error);
+    
+    const att = resAtt.data || [];
+    const sal = resSal.data || [];
+    const shifts = resShifts.data || [];
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Generate CheckIn HTML for shifts
+    let shiftsHtml = '';
+    if (shifts.length === 0) {
+      shiftsHtml = '<div class="text-slate-500 text-sm text-center p-4">Hôm nay bạn không có lịch dạy nào.</div>';
+    } else {
+      shiftsHtml = '<div class="flex flex-col gap-3 w-full">';
+      shifts.forEach(s => {
+        let actionBtn = '';
+        if (!s.attendance) {
+           actionBtn = `<button onclick="ptCheckIn('${s.classId || ''}')" class="btn-primary py-1.5 px-4 flex items-center gap-2 text-sm"><i data-lucide="log-in" class="w-3.5 h-3.5"></i> Check-in</button>`;
+        } else if (!s.attendance.checkOut) {
+           actionBtn = `<button onclick="ptCheckOut('${s.attendance.id}')" class="btn-danger py-1.5 px-4 flex items-center gap-2 text-sm"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Check-out</button>`;
+        } else {
+           actionBtn = `<span class="text-xs text-green-400 font-bold bg-green-400/10 px-3 py-1.5 rounded-lg border border-green-400/20"><i data-lucide="check" class="w-3.5 h-3.5 inline"></i> Đã hoàn thành</span>`;
+        }
+        
+        let attTime = s.attendance ? `<div class="text-xs text-slate-500 mt-1 font-mono">${s.attendance.checkIn||'-'} → ${s.attendance.checkOut||'-'}</div>` : '';
+        
+        shiftsHtml += `
+          <div class="flex items-center justify-between bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+            <div>
+              <div class="font-bold text-white text-sm">${escHtml(s.name)}</div>
+              <div class="text-xs text-primary-400 mt-0.5">${escHtml(s.time)}</div>
+              ${attTime}
+            </div>
+            <div>${actionBtn}</div>
+          </div>
+        `;
+      });
+      shiftsHtml += '</div>';
+    }
+    
+    c.innerHTML = `<div class="page-enter">
+      <div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+        <h2 class="text-2xl font-bold text-white uppercase tracking-tight">CÔNG & LƯƠNG</h2>
+        <div class="bg-darkcard border border-darkborder p-4 rounded-2xl shadow-lg w-full md:w-96">
+          <h3 class="font-bold text-white uppercase mb-3 text-sm flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4 text-primary-500"></i> Ca dạy hôm nay</h3>
+          ${shiftsHtml}
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Bảng Lương -->
+        <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl">
+          <h3 class="font-bold text-white uppercase mb-6 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-primary-500"></i> Bảng Lương Cá Nhân</h3>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="data-table">
+              <thead><tr><th>Kỳ Lương</th><th>Cơ bản</th><th>Tiền dạy (Buổi)</th><th>Thưởng</th><th>Khấu trừ</th><th>Tổng nhận</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                ${sal.map(s => `<tr>
+                  <td class="font-bold text-white">${s.month}/${s.year}</td>
+                  <td class="text-slate-400 text-xs">${fmtCurrency(s.baseSalary)}</td>
+                  <td>
+                    <div class="text-blue-400 text-xs font-bold">${fmtCurrency(s.sessionBonus)}</div>
+                    <div class="text-[10px] text-slate-500">${s.totalSessions} buổi</div>
+                  </td>
+                  <td class="text-green-400 text-xs font-bold">${fmtCurrency(s.bonus||0)}</td>
+                  <td class="text-red-400 text-xs font-bold">${fmtCurrency(s.deductions||0)}</td>
+                  <td class="font-bold text-primary-500">${fmtCurrency(s.totalAmount)}</td>
+                  <td>${statusBadge(s.paymentStatus)}</td>
+                </tr>`).join('')}
+                ${sal.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-500">Chưa có dữ liệu lương.</td></tr>' : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Chấm công -->
+        <div class="bg-darkcard border border-darkborder rounded-[32px] p-6 shadow-xl">
+          <h3 class="font-bold text-white uppercase mb-6 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-5 h-5 text-green-500"></i> Lịch Sử Chấm Công</h3>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="data-table">
+              <thead><tr><th>Ngày</th><th>Ca / Lớp</th><th>Vào/Ra</th><th>Buổi dạy</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                ${att.map(a => `<tr>
+                  <td class="font-bold text-white">${fmtDate(a.attendanceDate)}</td>
+                  <td class="text-xs text-primary-400 font-bold">${escHtml(a.className || 'Ca khác')}</td>
+                  <td class="text-xs text-slate-400 font-mono">${a.checkIn||'--'} - ${a.checkOut||'--'}</td>
+                  <td class="text-xs font-bold text-blue-400">+${a.sessionsCount}</td>
+                  <td>${statusBadge(a.status)}</td>
+                </tr>`).join('')}
+                ${att.length === 0 ? '<tr><td colspan="5" class="p-8 text-center text-slate-500">Chưa có dữ liệu chấm công.</td></tr>' : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    lucide.createIcons({ nodes: [c] });
+  } catch (e) { console.error(e); c.innerHTML = `<div class="p-20 text-center text-red-400">Lỗi: ${e.message}</div>`; }
+};
+
+window.ptCheckIn = async function(classId) {
+  if (!confirm('Xác nhận Check-in ca này bây giờ?')) return;
+  const res = await API.post('/api/pt/checkin', { classId: classId || null });
+  if (res.success) {
+    showToast('Check-in thành công', 'success');
+    navigate('pt_work');
+  } else {
+    showToast(res.error, 'error');
+  }
+};
+
+window.ptCheckOut = async function(attendanceId) {
+  if (!confirm('Xác nhận Check-out ca này?')) return;
+  const res = await API.post('/api/pt/checkout', { attendanceId });
+  if (res.success) {
+    showToast('Check-out thành công', 'success');
+    navigate('pt_work');
+  } else {
+    showToast(res.error, 'error');
+  }
 };

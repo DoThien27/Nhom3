@@ -3,7 +3,7 @@ window._currentPage = null;
 
 window.ROLE_MENU = {
   ADMIN: ['dashboard','members','member_cards','checkin','trainers','trainer_attendance','trainer_salary','sports','classes','facilities','events','plans','billing','reports','system_users'],
-  PT:    ['dashboard','members','checkin','sports','classes','facilities','events','billing','reports'],
+  PT:    ['pt_profile','pt_classes','pt_work'],
 };
 
 window.MENU_CONFIG = {
@@ -22,10 +22,14 @@ window.MENU_CONFIG = {
   billing:           { label:'Tài chính', icon:'banknote' },
   reports:           { label:'Báo cáo', icon:'bar-chart-3' },
   system_users:      { label:'Tài khoản hệ thống', icon:'settings' },
+  pt_profile:        { label:'Hồ sơ của tôi', icon:'user' },
+  pt_classes:        { label:'Lớp của tôi', icon:'calendar' },
+  pt_work:           { label:'Công & Lương', icon:'wallet' },
 };
 
 window.MENU_GROUPS = [
   { key: 'dashboard_group', label: 'Tổng quan', icon: 'layout-dashboard', items: ['dashboard'] },
+  { key: 'pt_group', label: 'Cá nhân (PT)', icon: 'user', items: ['pt_profile', 'pt_classes', 'pt_work'] },
   { key: 'member_group', label: 'Quản lý Hội viên', icon: 'users', items: ['members', 'member_cards', 'checkin'] },
   { key: 'trainer_group', label: 'Huấn luyện viên', icon: 'award', items: ['trainers', 'trainer_attendance', 'trainer_salary'] },
   { key: 'service_group', label: 'Dịch vụ & Cơ sở', icon: 'activity', items: ['sports', 'classes', 'plans', 'facilities', 'events'] },
@@ -51,7 +55,7 @@ window.handleLogin = async function(e) {
       showToast('Chào mừng quay trở lại!', 'success'); 
     } else { 
       const err = document.getElementById('login-error'); 
-      err.textContent = res.message; 
+      err.textContent = res.message || res.error || 'Đăng nhập thất bại'; 
       err.classList.remove('hidden'); 
     }
   } catch(err) {
@@ -71,6 +75,7 @@ window.showLoginPage = function() {
 window.showMainApp = function() {
   document.getElementById('login-page').classList.add('hidden'); 
   document.getElementById('main-app').classList.remove('hidden');
+  document.body.setAttribute('data-role', _currentUser.role);
   buildSidebar(); 
   updateUserPanel();
   const pages = ROLE_MENU[_currentUser.role] || [];
@@ -105,7 +110,7 @@ window.buildSidebar = function() {
     headerEl.innerHTML = `
       <div class="flex items-center gap-3">
         <i data-lucide="${group.icon}" class="w-5 h-5 transition-transform group-hover/menu:scale-110"></i>
-        <span class="font-bold nav-label text-[11px] uppercase tracking-wider group-hover/menu:text-white transition-colors">${group.label}</span>
+        <span class="font-bold nav-label text-xs uppercase tracking-wider group-hover/menu:text-white transition-colors">${group.label}</span>
       </div>
     `;
     

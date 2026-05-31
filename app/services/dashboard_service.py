@@ -1,8 +1,10 @@
 from app.database import get_db_context
+from app.services.member_service import MemberService
 
 class DashboardService:
     @staticmethod
     def lay_thong_ke():
+        MemberService.cap_nhat_the_het_han()
         with get_db_context() as (conn, cur):
             # 1. Basic Stats
             cur.execute("SELECT COUNT(*) as c FROM Members")

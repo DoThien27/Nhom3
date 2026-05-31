@@ -194,3 +194,8 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* --- Role-based Visibility --- */
+body[data-role='PT'] .admin-only {
+    display: none !important;
+}

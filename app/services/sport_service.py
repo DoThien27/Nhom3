@@ -5,19 +5,26 @@ Quan ly mon the thao.
 """
 import uuid
 from app.database import get_db_context
-
+from app.utils import generate_sequential_id
 
 class SportService:
     @staticmethod
     def lay_tat_ca():
         with get_db_context() as (conn, cur):
-            cur.execute("SELECT * FROM Sports")
+            sql = """
+                SELECT 
+                    s.*,
+                    (SELECT COUNT(*) FROM Facilities WHERE sport_id = s.sport_id) as facilityCount,
+                    (SELECT COUNT(*) FROM Classes WHERE sportId = s.sport_id AND status != 'CANCELLED') as classCount
+                FROM Sports s
+            """
+            cur.execute(sql)
             return cur.fetchall()
     
     @staticmethod
     def them(sport_name, description):
         with get_db_context() as (conn, cur):
-            sport_id = str(uuid.uuid4())[:8]
+            sport_id = generate_sequential_id('Sports', 'SP', 'sport_id')
             cur.execute("INSERT INTO Sports (sport_id, sport_name, description) VALUES (%s,%s,%s)", (sport_id, sport_name, description))
             conn.commit()
             return sport_id

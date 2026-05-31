@@ -11,11 +11,13 @@ window.statusBadge = function(status) {
     'PENDING':['badge-yellow','Chờ duyệt'], 
     'PAID':['badge-green','Đã TT'], 
     'UNPAID':['badge-yellow','Chưa TT'], 
+    'PARTIAL':['badge-blue','TT 1 phần'],
     'CANCELLED':['badge-red','Đã hủy'], 
     'UPCOMING':['badge-blue','Sắp tới'], 
     'ONGOING':['badge-green','Đang diễn ra'], 
     'COMPLETED':['badge-gray','Hoàn thành'], 
     'REGISTERED':['badge-blue','Đã ĐK'], 
+    'CONFIRMED':['badge-green','Đã xác nhận'],
     'REVOKED':['badge-red','Đã thu hồi'], 
     'LOST':['badge-orange','Mất thẻ'], 
     'PT':['badge-purple','HLV'], 
@@ -25,6 +27,7 @@ window.statusBadge = function(status) {
     'ABSENT':['badge-red','Vắng mặt'],
     'LATE':['badge-yellow','Đi muộn'],
     'HALF':['badge-gray','Nửa ngày'],
+    'FULL':['badge-red','Đã đầy'],
   };
   const [cls, lbl] = map[status] || ['badge-gray', status];
   return `<span class="badge ${cls}">${lbl}</span>`;
@@ -67,10 +70,26 @@ window.confirmLogout = function() { document.getElementById('logout-modal').clas
 window.closeLogoutModal = function() { document.getElementById('logout-modal').classList.add('hidden'); }
 window.doLogout = async function() { await API.post('/auth/logout'); window._appLogout(); }
 
-window.deleteItem = async function(mod, id, cb) {
-  if (!confirm('Bạn có chắc muốn xóa không?')) return;
-  const res = await API.delete(`/api/${mod}/${id}`);
-  if (res.success) { showToast('Đã xóa thành công!', 'success'); cb(); } else showToast(res.error, 'error');
+window.customConfirm = function(title, message, onConfirm) {
+  openModal(`<div class="p-8">
+    <h3 class="text-xl font-bold text-white uppercase mb-4">${title}</h3>
+    <p class="text-slate-400 mb-8">${message}</p>
+    <div class="flex justify-end gap-3">
+      <button onclick="closeModal()" class="btn-gray">Hủy</button>
+      <button id="btn-confirm-action" class="btn-primary">Đồng ý</button>
+    </div>
+  </div>`);
+  document.getElementById('btn-confirm-action').onclick = () => {
+    closeModal();
+    onConfirm();
+  };
+}
+
+window.deleteItem = function(mod, id, cb) {
+  customConfirm('Xác nhận xóa', 'Bạn có chắc chắn muốn xóa không? Dữ liệu không thể khôi phục sau khi xóa.', async () => {
+    const res = await API.delete(`/api/${mod}/${id}`);
+    if (res.success) { showToast('Đã xóa thành công!', 'success'); cb(); } else showToast(res.error, 'error');
+  });
 }
 
 window.handleGlobalSearch = function(query) {
@@ -116,6 +135,8 @@ window.filterCustomSelect = function(inputId, dropdownId) {
 };
 
 window.selectCustomOption = function(hiddenInputId, searchInputId, value, text) {
-    document.getElementById(hiddenInputId).value = value;
+    const hiddenInput = document.getElementById(hiddenInputId);
+    hiddenInput.value = value;
     document.getElementById(searchInputId).value = text;
+    hiddenInput.dispatchEvent(new Event('change'));
 };

@@ -7,17 +7,13 @@ import uuid
 from app.database import get_db_context
 from app.models import NguoiDung
 from .validators import Validators
-
+from app.utils import generate_sequential_id
 
 class UserService:
     @staticmethod
     def kiem_tra_trung_ten_dang_nhap(username: str, current_id=None) -> bool:
         with get_db_context() as (conn, cur):
             cur.execute("SELECT id FROM Users WHERE username=%s", (username,))
-            r = cur.fetchone()
-            if r and (not current_id or str(r["id"]) != str(current_id)):
-                return True
-            cur.execute("SELECT id FROM Members WHERE username=%s", (username,))
             r = cur.fetchone()
             if r and (not current_id or str(r["id"]) != str(current_id)):
                 return True
@@ -41,14 +37,6 @@ class UserService:
                         activeStudents=row.get("activeStudents", 0),
                         phone=row.get("phone"), address=row.get("address"),
                     )
-                # Tim trong bang Members
-                cur.execute("SELECT * FROM Members WHERE username=%s", (username,))
-                row = cur.fetchone()
-                if row and Validators.kiem_tra_mat_khau(password, row["password"] or ""):
-                    return NguoiDung(
-                        id=row["id"], username=row["username"],
-                        fullName=row["fullName"], role="MEMBER",
-                    )
         except Exception as e:
             from app.database import logger
             logger.error(f"Login error: {e}")
@@ -62,7 +50,8 @@ class UserService:
 
     @staticmethod
     def them(data: dict):
-        uid = str(uuid.uuid4())[:12]
+        role = data.get("role", "PT")
+        uid = generate_sequential_id('Users', role)
         pw = Validators.bam_mat_khau(data.get("password", "123456"))
         with get_db_context() as (conn, cur):
             cur.execute(

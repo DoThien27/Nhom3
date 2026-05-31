@@ -38,6 +38,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
         return f(*args, **kwargs)
     return decorated_function
 
@@ -52,3 +53,34 @@ def roles_required(*roles):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def generate_sequential_id(table, prefix, id_col='id'):
+    from app.database import get_connection
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        plen = len(prefix)
+        sql = f"""
+            SELECT {id_col} FROM {table} 
+            WHERE {id_col} LIKE %s 
+            ORDER BY CAST(SUBSTRING({id_col}, %s) AS UNSIGNED) DESC 
+            LIMIT 1
+        """
+        cur.execute(sql, (f"{prefix}%", plen + 1))
+        row = cur.fetchone()
+        if row and row[id_col]:
+            last_id = row[id_col]
+            num_str = last_id[plen:]
+            if num_str.isdigit():
+                next_num = int(num_str) + 1
+                pad_len = max(len(num_str), 3)
+                return f"{prefix}{next_num:0{pad_len}d}"
+        cur.close()
+        return f"{prefix}001"
+    except Exception as e:
+        print(f"Error generating ID for {table}: {e}")
+        import uuid
+        return f"{prefix}{str(uuid.uuid4())[:8].upper()}"
+    finally:
+        try: conn.close()
+        except: pass

@@ -12,6 +12,7 @@ def register_routes(app):
     from .dashboard_routes import dashboard_bp
     from .user_routes import user_bp
     from .report_routes import report_bp
+    from .pt_routes import pt_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(member_bp)
@@ -24,3 +25,4 @@ def register_routes(app):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(report_bp)
+    app.register_blueprint(pt_bp)

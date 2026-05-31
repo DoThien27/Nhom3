@@ -24,9 +24,9 @@ class Validators:
     @staticmethod
     def la_so_dien_thoai(v: str):
         if not v:
-            return "So dien thoai khong duoc de trong."
+            return "Số điện thoại không được để trống."
         if not re.fullmatch(r"0\d{9}", v.strip()):
-            return "So dien thoai phai co 10 chu so va bat dau bang 0."
+            return "Số điện thoại phải có 10 chữ số và bắt đầu bằng số 0."
         return None
 
     @staticmethod
@@ -34,5 +34,5 @@ class Validators:
         if not v or not v.strip():
             return None
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", v.strip()):
-            return "Dia chi email khong hop le."
+            return "Địa chỉ email không hợp lệ."
         return None

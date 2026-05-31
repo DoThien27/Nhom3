@@ -60,6 +60,8 @@ class CoSoVatChat:
     facility_id: str
     facility_name: str
     location: Optional[str] = None
+    sport_id: Optional[str] = None
+    sport_name: Optional[str] = None
 
 @dataclass
 class SuKien:
@@ -111,4 +113,57 @@ class TheHoiVien:
     issueDate: Optional[str] = None
     expiryDate: Optional[str] = None
     status: str = 'INACTIVE' # ACTIVE, INACTIVE, EXPIRED, REVOKED
+    note: Optional[str] = None
+
+@dataclass
+class LichSuCheckIn:
+    id: str
+    memberId: str
+    checkInTime: str
+    checkOutTime: Optional[str] = None
+    status: str = 'VALID'
+    note: Optional[str] = None
+
+@dataclass
+class DangKyLop:
+    id: str
+    classId: str
+    memberId: str
+    enrollDate: str
+    status: str = 'ACTIVE'
+
+@dataclass
+class DangKySuKien:
+    id: str
+    eventId: str
+    memberId: str
+    registerDate: str
+    status: str = 'ACTIVE'
+
+@dataclass
+class ChamCongHLV:
+    id: str
+    trainerId: str
+    date: str
+    status: str = 'PRESENT'
+    note: Optional[str] = None
+
+@dataclass
+class LuongHLV:
+    id: str
+    trainerId: str
+    month: int
+    year: int
+    baseSalary: float = 0.0
+    bonus: float = 0.0
+    totalSalary: float = 0.0
+    status: str = 'UNPAID'
+
+@dataclass
+class DiemDanhLop:
+    id: int
+    classId: str
+    memberId: str
+    date: str
+    status: str = 'PRESENT'
     note: Optional[str] = None
